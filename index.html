@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Touch 'n Go 风格 - 盲盒与直兑 (带后台管理)</title>
+  <title>Touch 'n Go 风格 - 盲盒与直兑 (带后台管理与进度条)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Alpine.js -->
@@ -44,12 +44,6 @@
 
     .tng-btn-primary:hover {
       filter: brightness(1.08);
-    }
-
-    .tng-btn-blue {
-      background: #005FB8;
-      color: #FFFFFF;
-      font-weight: 700;
     }
 
     .card-hover-3d {
@@ -94,7 +88,6 @@
       </div>
 
       <div class="flex items-center gap-2 text-xs">
-        <!-- 后台管理开关按钮 -->
         <button @click="showAdmin = !showAdmin" class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded-full font-bold hover:bg-amber-500/30 transition">
           <span x-text="showAdmin ? '关闭后台' : '⚙️ 后台管理'"></span>
         </button>
@@ -111,7 +104,7 @@
     </div>
   </header>
 
-  <!-- 🛠️ 后台管理面板 (Admin Dashboard) -->
+  <!-- 后台管理面板 -->
   <div x-show="showAdmin" x-transition class="max-w-4xl mx-auto px-4 mt-6">
     <div class="bg-slate-900/95 border-2 border-[#FFCC00] rounded-3xl p-6 text-slate-100 shadow-2xl space-y-6">
       <div class="flex justify-between items-center border-b border-slate-700 pb-4">
@@ -150,17 +143,11 @@
       <div class="space-y-3 max-h-96 overflow-y-auto pr-1">
         <template x-for="(item, index) in storeItems" :key="index">
           <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700 flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
-            <!-- 预览图 -->
-            <div class="w-12 h-12 bg-slate-900 border border-slate-700 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
-              <template x-if="item.img">
-                <img :src="item.img" class="w-full h-full object-cover">
-              </template>
-              <template x-if="!item.img">
-                <span class="text-xl" x-text="item.icon || '🎁'"></span>
-              </template>
+            <div class="w-12 h-12 bg-slate-900 border border-slate-700 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 relative">
+              <span class="text-xl absolute" x-text="item.icon || '🎁'"></span>
+              <img x-show="item.img" :src="item.img" @error="item.img = ''" class="w-full h-full object-cover z-10 relative">
             </div>
 
-            <!-- 输入框列 -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-2 flex-grow w-full">
               <div>
                 <label class="text-[10px] text-slate-400">商品名称</label>
@@ -180,7 +167,6 @@
               </div>
             </div>
 
-            <!-- 操作按钮 -->
             <div class="flex items-center gap-2 flex-shrink-0">
               <label class="cursor-pointer bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-[11px] text-slate-200">
                 更换图片
@@ -209,22 +195,17 @@
       </div>
     </div>
 
-    <!-- 主展示区：3D 盲盒抽奖区 -->
+    <!-- 3D 盲盒抽奖区 -->
     <section class="tng-card rounded-3xl p-6 border border-white/20 relative overflow-hidden shadow-2xl animate-glow">
       <div class="flex flex-col md:flex-row items-center justify-between gap-6">
-        
-        <!-- 左侧：3D Canvas 舞台 -->
         <div class="w-full md:w-1/2 relative flex flex-col items-center justify-center min-h-[260px] bg-black/30 rounded-2xl border border-white/10 overflow-hidden shadow-inner">
           <div class="absolute top-3 left-3 bg-[#FFCC00] text-[#002B66] text-[10px] font-black px-2.5 py-0.5 rounded-full z-10 shadow">3D GO BOX</div>
-          
           <div id="canvas-container" class="w-full h-[260px] cursor-grab active:cursor-grabbing"></div>
-
           <p class="text-center text-[11px] text-blue-200/70 pb-2 flex items-center gap-1">
             <span>👉</span> 拖拽可 360° 旋转观察 3D 悬浮宝箱
           </p>
         </div>
 
-        <!-- 右侧：开启与 iPhone 碎片进度 -->
         <div class="w-full md:w-1/2 space-y-4">
           <div>
             <span class="text-xs font-bold text-[#FFCC00] uppercase tracking-wider">限时 Go Rewards 专场</span>
@@ -232,7 +213,6 @@
             <p class="text-blue-100/80 text-xs mt-1">每次开启消耗 10 GO积分，100% 获得现金红包或实物碎片</p>
           </div>
 
-          <!-- iPhone 碎片进度条 -->
           <div class="bg-[#00173d]/80 border border-white/10 rounded-2xl p-4 relative">
             <div class="flex justify-between items-center text-xs mb-2">
               <span class="text-white font-bold flex items-center gap-1">📱 iPhone 16 碎片收集</span>
@@ -246,7 +226,6 @@
             <div class="text-[10px] text-blue-200/60 mt-1.5">集齐 50 个碎片可直接兑换实物</div>
           </div>
 
-          <!-- 抽奖按钮 -->
           <button @click="open3DChest()" :disabled="points < 10 || isOpening" 
                   :class="points < 10 || isOpening ? 'bg-white/10 text-white/40 cursor-not-allowed' : 'tng-btn-primary active:scale-95 shadow-lg shadow-yellow-500/20'"
                   class="w-full py-4 rounded-2xl font-black text-base transition duration-200 uppercase tracking-wider flex items-center justify-center gap-2">
@@ -257,7 +236,7 @@
       </div>
     </section>
 
-    <!-- 🛍️ 前台直兑商城 (由后台后台实时驱动) -->
+    <!-- 🛍️ 前台直兑商城（增加独立进度条） -->
     <section class="space-y-3">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-extrabold text-white flex items-center gap-2">
@@ -268,30 +247,51 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <template x-for="(item, index) in storeItems" :key="index">
-          <div class="tng-card rounded-2xl p-4 card-hover-3d flex items-center justify-between relative overflow-hidden">
+          <div class="tng-card rounded-2xl p-4 card-hover-3d flex flex-col justify-between relative overflow-hidden gap-3">
+            
+            <!-- 角落角标 -->
             <div x-show="item.tag" class="absolute top-0 right-0 bg-[#FFCC00] text-[#002B66] text-[9px] font-black px-2 py-0.5 rounded-bl-lg uppercase" x-text="item.tag"></div>
-            <div class="flex items-center gap-3.5">
-              <div class="w-14 h-14 rounded-xl bg-[#00173d] border border-white/10 flex items-center justify-center overflow-hidden shadow-inner flex-shrink-0">
-                <template x-if="item.img">
-                  <img :src="item.img" :alt="item.name" class="w-full h-full object-cover">
-                </template>
-                <template x-if="!item.img">
-                  <span class="text-2xl" x-text="item.icon || '🎁'"></span>
-                </template>
+
+            <!-- 上半部分：图片、名称、积分与兑换按钮 -->
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3.5">
+                <div class="w-14 h-14 rounded-xl bg-[#00173d] border border-white/10 flex items-center justify-center overflow-hidden shadow-inner flex-shrink-0 relative">
+                  <span class="text-2xl absolute" x-text="item.icon || '🎁'"></span>
+                  <img x-show="item.img" :src="item.img" :alt="item.name" @error="item.img = ''" class="w-full h-full object-cover z-10 relative">
+                </div>
+                <div>
+                  <div class="font-extrabold text-white text-sm" x-text="item.name"></div>
+                  <div class="text-xs text-[#FFCC00] font-bold mt-0.5">
+                    <span x-text="`${item.cost} GO积分`"></span> 
+                    <span class="text-blue-200/60 font-normal" x-text="item.turnoverReq ? `(${item.turnoverReq})` : ''"></span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <div class="font-extrabold text-white text-sm" x-text="item.name"></div>
-                <div class="text-xs text-[#FFCC00] font-bold mt-0.5">
-                  <span x-text="`${item.cost} GO积分`"></span> 
-                  <span class="text-blue-200/60 font-normal" x-text="item.turnoverReq ? `(${item.turnoverReq})` : ''"></span>
+
+              <button @click="redeem(item.name, item.cost)" :disabled="points < item.cost"
+                      :class="points < item.cost ? 'bg-white/10 text-white/30 cursor-not-allowed' : 'tng-btn-primary active:scale-95 shadow-md shadow-amber-500/20'"
+                      class="px-4 py-2 rounded-xl text-xs font-bold transition flex-shrink-0">
+                直接兑换
+              </button>
+            </div>
+
+            <!-- 下半部分：单个商品的兑换进度条 -->
+            <div class="bg-black/30 border border-white/10 rounded-xl p-2.5 space-y-1.5">
+              <div class="flex justify-between items-center text-[11px]">
+                <span class="text-blue-200/80">兑换进度:</span>
+                <span class="font-mono font-bold" :class="points >= item.cost ? 'text-emerald-400' : 'text-amber-300'"
+                      x-text="points >= item.cost ? '已解锁 100%' : `还差 ${item.cost - points} 积分 (${Math.min(100, Math.floor((points / item.cost) * 100))}%)`">
+                </span>
+              </div>
+              <div class="w-full bg-black/50 h-2 rounded-full overflow-hidden border border-white/10 relative">
+                <div class="h-full rounded-full transition-all duration-500 relative" 
+                     :class="points >= item.cost ? 'bg-emerald-400' : 'bg-gradient-to-r from-amber-500 to-[#FFCC00]'"
+                     :style="`width: ${Math.min(100, (points / item.cost) * 100)}%`">
+                  <div class="progress-head" x-show="points > 0"></div>
                 </div>
               </div>
             </div>
-            <button @click="redeem(item.name, item.cost)" :disabled="points < item.cost"
-                    :class="points < item.cost ? 'bg-white/10 text-white/30' : 'tng-btn-primary active:scale-95'"
-                    class="px-4 py-2 rounded-xl text-xs font-bold transition flex-shrink-0">
-              直接兑换
-            </button>
+
           </div>
         </template>
       </div>
@@ -336,10 +336,8 @@
         isOpening: false,
         rewardResult: null,
 
-        // 新增商品表单
         newItem: { name: '', cost: null, turnoverReq: '', tag: '', img: '' },
 
-        // 默认商品清单
         defaultStoreItems: [
           { name: "Spritzer 天然矿泉水 (箱)", cost: 5, turnoverReq: "5k流水", icon: "💧", tag: "入门热销", img: "" },
           { name: "RGB 机械键盘", cost: 50, turnoverReq: "50k流水", icon: "⌨️", tag: "电竞推荐", img: "" },
@@ -353,7 +351,6 @@
         storeItems: [],
 
         initApp() {
-          // 从 localStorage 读取存储的商品
           const savedItems = localStorage.getItem('tng_store_items');
           if (savedItems) {
             try {
@@ -368,7 +365,6 @@
           this.init3D();
         },
 
-        // 后台管理逻辑
         saveStoreItems() {
           localStorage.setItem('tng_store_items', JSON.stringify(this.storeItems));
           alert("✅ 保存成功！直兑专区已应用最新的商品配置。");
@@ -398,7 +394,6 @@
           }
         },
 
-        // 处理本地图片文件上传并转为 Base64 保存
         uploadImage(event, target) {
           const file = event.target.files[0];
           if (!file) return;
@@ -416,7 +411,6 @@
           reader.readAsDataURL(file);
         },
 
-        // Three.js 变量
         scene: null, camera: null, renderer: null, chestGroup: null, lidGroup: null, light1: null,
 
         prizePool: [
