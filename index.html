@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Touch 'n Go 风格 - 盲盒与直兑 (支持10连抽)</title>
+  <title>Touch 'n Go 风格 - 盲盒与直兑 (自选兑换版)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Alpine.js -->
@@ -213,7 +213,7 @@
             <p class="text-blue-100/80 text-xs mt-1">每次开启消耗 10 GO积分，100% 获得现金红包或实物碎片</p>
           </div>
 
-          <!-- iPhone 碎片收集与手动兑换区域 -->
+          <!-- iPhone 碎片收集与自选兑换区域 -->
           <div class="bg-[#00173d]/80 border border-white/10 rounded-2xl p-4 relative space-y-2">
             <div class="flex justify-between items-center text-xs">
               <span class="text-white font-bold flex items-center gap-1">📱 iPhone 16 碎片收集</span>
@@ -227,12 +227,12 @@
             </div>
 
             <div class="flex justify-between items-center pt-1">
-              <span class="text-[10px] text-blue-200/60">集齐 50 个碎片可直接兑换实物</span>
+              <span class="text-[10px] text-blue-200/60" x-text="iphoneFragments >= 50 ? '已达标！点击右侧按钮兑换' : '集齐 50 个碎片可自由选择兑换'"></span>
               <button @click="redeemIphone()" 
                       :disabled="iphoneFragments < 50"
-                      :class="iphoneFragments >= 50 ? 'bg-emerald-400 text-slate-950 font-black animate-bounce shadow-lg shadow-emerald-400/30' : 'bg-white/10 text-white/30 cursor-not-allowed'"
-                      class="px-3 py-1 rounded-lg text-xs font-bold transition">
-                <span x-text="iphoneFragments >= 50 ? '🎁 立即兑换实物' : '未集齐'"></span>
+                      :class="iphoneFragments >= 50 ? 'bg-emerald-400 text-slate-950 font-black animate-bounce shadow-lg shadow-emerald-400/30 hover:scale-105' : 'bg-white/10 text-white/30 cursor-not-allowed'"
+                      class="px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                <span x-text="iphoneFragments >= 50 ? '🎁 兑换 iPhone 16' : '未集齐 (50)'"></span>
               </button>
             </div>
           </div>
@@ -315,7 +315,7 @@
 
   </main>
 
-  <!-- 单抽 / 10连抽 中奖汇总弹窗 Modal -->
+  <!-- 中奖汇总弹窗 Modal -->
   <div x-show="rewardResults.length > 0" x-transition.opacity 
        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
     
@@ -366,7 +366,6 @@
         iphoneFragments: 12,
         isOpening: false,
 
-        // 支持多张卡牌结算
         rewardResults: [],
 
         get totalRewardCash() {
@@ -632,7 +631,6 @@
           }, 16);
         },
 
-        // 通用开启函数 (支持 count = 1 或 10)
         openChest(count) {
           const cost = count * 10;
           if (this.points < cost || this.isOpening) return;
@@ -662,7 +660,6 @@
               this.createBurstParticles();
               this.playSound('win');
 
-              // 随机抽取指定数量结果
               const pulledPrizes = [];
               for (let i = 0; i < count; i++) {
                 const prize = this.prizePool[Math.floor(Math.random() * this.prizePool.length)];
@@ -683,9 +680,6 @@
           const fragmentTotal = this.totalRewardFragments;
           if (fragmentTotal > 0) {
             this.iphoneFragments += fragmentTotal;
-            if (this.iphoneFragments >= 50) {
-              this.redeemIphone();
-            }
           }
           this.rewardResults = [];
         },
@@ -707,19 +701,19 @@
             alert(`♻️ 已将现金奖励 (RM ${cashTotal}) 回收转换为 ${cashTotal} GO积分！碎片额外累积 +${fragmentTotal}`);
           }
 
-          if (this.iphoneFragments >= 50) {
-            this.redeemIphone();
-          }
-
           this.rewardResults = [];
         },
 
+        // 仅在玩家主动点击兑换按钮时才会触发
         redeemIphone() {
           if (this.iphoneFragments < 50) return;
-          this.playSound('win');
-          confetti({ particleCount: 150, spread: 100, origin: { y: 0.4 } });
-          this.iphoneFragments -= 50;
-          alert("🎉 恭喜！已成功兑换一台 iPhone 16 Pro 实物奖励，请联系客服登记地址发放！");
+          
+          if (confirm(`当前拥有 ${this.iphoneFragments} 个碎片，确定消耗 50 个碎片兑换一台 iPhone 16 Pro 吗？`)) {
+            this.playSound('win');
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.4 } });
+            this.iphoneFragments -= 50;
+            alert("🎉 恭喜！已成功兑换一台 iPhone 16 Pro 实物奖励，请联系客服登记地址发放！");
+          }
         },
 
         addTurnover(amount) {
