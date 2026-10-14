@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Touch 'n Go 风格 - 盲盒与直兑 (自选兑换版)</title>
+  <title>Touch 'n Go 风格 - 盲盒与直兑 (带实时中奖播报)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Alpine.js -->
@@ -182,6 +182,28 @@
 
   <main class="max-w-4xl mx-auto px-4 mt-6 space-y-6">
 
+    <!-- 📢 实时全服中奖滚动播报 (跑马灯) -->
+    <div class="bg-[#00173d]/90 border border-amber-500/30 rounded-2xl px-4 py-2.5 flex items-center gap-3 overflow-hidden shadow-lg">
+      <div class="flex items-center gap-1.5 text-xs font-black text-[#FFCC00] flex-shrink-0">
+        <span class="animate-bounce">📢</span> 实时中奖播报:
+      </div>
+      <div class="overflow-hidden relative w-full h-5 text-xs text-blue-100 flex items-center">
+        <template x-if="liveTickerList.length > 0">
+          <div class="absolute transition-all duration-500 ease-out flex items-center gap-2"
+               :style="`transform: translateY(-${tickerIndex * 20}px);`">
+            <template x-for="(msg, idx) in liveTickerList" :key="idx">
+              <div class="h-5 flex items-center gap-2 w-full text-ellipsis whitespace-nowrap">
+                <span class="font-bold text-amber-300" x-text="msg.user"></span>
+                <span>抽中了</span>
+                <span class="font-black text-yellow-400" x-text="msg.prize"></span>
+                <span class="text-[10px] text-blue-200/50" x-text="`(${msg.time})`"></span>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </div>
+
     <!-- 测试调试控制台 -->
     <div class="tng-card rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
       <span class="text-blue-100 font-medium flex items-center gap-1">
@@ -257,6 +279,45 @@
       </div>
     </section>
 
+    <!-- 📜 盲盒抽奖历史记录面板 -->
+    <section class="tng-card rounded-2xl p-4 space-y-3">
+      <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
+        <h3 class="text-sm font-extrabold text-white flex items-center gap-2">
+          <span>📜</span> 个人中奖历史记录 (My History)
+          <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-normal" x-text="`${historyList.length} 条记录`"></span>
+        </h3>
+        <div class="flex items-center gap-3 text-xs">
+          <button @click="showHistory = !showHistory" class="text-blue-200 hover:text-white transition">
+            <span x-text="showHistory ? '收起 ▲' : '展开 ▼'"></span>
+          </button>
+          <button x-show="historyList.length > 0" @click="clearHistory()" class="text-red-400 hover:text-red-300 transition">
+            清空
+          </button>
+        </div>
+      </div>
+
+      <div x-show="showHistory" x-transition class="space-y-2">
+        <template x-if="historyList.length === 0">
+          <div class="text-center text-xs text-blue-200/50 py-6">暂无抽奖历史记录，快去试试手气吧！</div>
+        </template>
+
+        <div class="max-h-60 overflow-y-auto pr-1 space-y-1.5">
+          <template x-for="(log, i) in historyList" :key="i">
+            <div class="bg-black/30 border border-white/5 rounded-xl px-3 py-2 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2.5">
+                <span class="text-lg" x-text="log.icon"></span>
+                <div>
+                  <div class="font-bold text-white" x-text="log.name"></div>
+                  <div class="text-[10px] text-blue-200/50" x-text="log.time"></div>
+                </div>
+              </div>
+              <div class="font-mono font-black text-amber-300" x-text="log.type === 'cash' ? `RM ${log.value}` : `+${log.value} 碎片`"></div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </section>
+
     <!-- 🛍️ 前台直兑商城 -->
     <section class="space-y-3">
       <div class="flex items-center justify-between">
@@ -324,7 +385,6 @@
         ✨ <span x-text="rewardResults.length > 1 ? '🎉 10 连抽宝箱爆发结果 🎉' : '恭喜获得盲盒大奖'"></span> ✨
       </div>
       
-      <!-- 多卡牌展示区 -->
       <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 max-h-[60vh] overflow-y-auto p-1">
         <template x-for="(res, idx) in rewardResults" :key="idx">
           <div class="bg-black/40 border rounded-xl p-2.5 flex flex-col items-center justify-center space-y-1 transform transition hover:scale-105"
@@ -336,7 +396,6 @@
         </template>
       </div>
 
-      <!-- 汇总文案 -->
       <div class="bg-white/5 rounded-xl p-2.5 text-xs flex justify-around items-center border border-white/10">
         <div>现金总计: <span class="text-emerald-400 font-mono font-black text-sm" x-text="`RM ${totalRewardCash}`"></span></div>
         <div class="w-px h-4 bg-white/20"></div>
@@ -359,6 +418,7 @@
     function tngApp() {
       return {
         showAdmin: false,
+        showHistory: true,
         turnover: 50000,
         points: 50,
         animatedTurnover: 50000,
@@ -367,6 +427,17 @@
         isOpening: false,
 
         rewardResults: [],
+        historyList: [],
+
+        // 实时中奖跑马灯数据
+        liveTickerList: [
+          { user: "Az***", prize: "RM 888 现金大奖 🧧", time: "刚才" },
+          { user: "Sherman***", prize: "5 个 iPhone 碎片 🧩", time: "1分钟前" },
+          { user: "Alex88***", prize: "RM 58 现金红包 💰", time: "2分钟前" },
+          { user: "Kevin***", prize: "3 个 iPhone 碎片 🧩", time: "3分钟前" },
+          { user: "MeiLing***", prize: "RM 28 现金红包 💵", time: "5分钟前" }
+        ],
+        tickerIndex: 0,
 
         get totalRewardCash() {
           return this.rewardResults.reduce((acc, cur) => cur.type === 'cash' ? acc + cur.value : acc, 0);
@@ -402,7 +473,34 @@
             this.storeItems = [...this.defaultStoreItems];
           }
 
+          const savedHistory = localStorage.getItem('tng_history_list');
+          if (savedHistory) {
+            try {
+              this.historyList = JSON.parse(savedHistory);
+            } catch (e) {
+              this.historyList = [];
+            }
+          }
+
           this.init3D();
+          this.startTickerLoop();
+        },
+
+        startTickerLoop() {
+          setInterval(() => {
+            this.tickerIndex = (this.tickerIndex + 1) % this.liveTickerList.length;
+          }, 3000);
+        },
+
+        saveHistory() {
+          localStorage.setItem('tng_history_list', JSON.stringify(this.historyList));
+        },
+
+        clearHistory() {
+          if (confirm("确定要清空所有个人抽奖历史记录吗？")) {
+            this.historyList = [];
+            localStorage.removeItem('tng_history_list');
+          }
         },
 
         saveStoreItems() {
@@ -661,10 +759,27 @@
               this.playSound('win');
 
               const pulledPrizes = [];
+              const nowTime = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
               for (let i = 0; i < count; i++) {
                 const prize = this.prizePool[Math.floor(Math.random() * this.prizePool.length)];
-                pulledPrizes.push({ ...prize });
+                const logItem = { ...prize, time: nowTime };
+                pulledPrizes.push(logItem);
+                
+                // 追加至个人历史记录
+                this.historyList.unshift(logItem);
+
+                // 如果抽到大奖，同步推进到公共实时跑马灯
+                if (prize.value >= 50 || prize.isGrand) {
+                  this.liveTickerList.unshift({
+                    user: "Az (你)",
+                    prize: prize.type === 'cash' ? `RM ${prize.value} 现金红包` : `${prize.value}个 iPhone 碎片`,
+                    time: "刚才"
+                  });
+                }
               }
+
+              this.saveHistory();
 
               this.rewardResults = pulledPrizes;
               confetti({ particleCount: count * 15, spread: 80 + count * 2, origin: { y: 0.5 } });
@@ -704,7 +819,6 @@
           this.rewardResults = [];
         },
 
-        // 仅在玩家主动点击兑换按钮时才会触发
         redeemIphone() {
           if (this.iphoneFragments < 50) return;
           
@@ -712,6 +826,13 @@
             this.playSound('win');
             confetti({ particleCount: 150, spread: 100, origin: { y: 0.4 } });
             this.iphoneFragments -= 50;
+            
+            this.liveTickerList.unshift({
+              user: "Az (你)",
+              prize: "📱 iPhone 16 Pro 256G (实物大奖)",
+              time: "刚才"
+            });
+
             alert("🎉 恭喜！已成功兑换一台 iPhone 16 Pro 实物奖励，请联系客服登记地址发放！");
           }
         },
@@ -739,6 +860,13 @@
           this.points -= cost;
           this.animateValue('animatedPoints', this.points);
           confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+
+          this.liveTickerList.unshift({
+            user: "Az (你)",
+            prize: name,
+            time: "刚才"
+          });
+
           alert(`兑换成功！已提交客服发放：${name}`);
         },
 
@@ -748,6 +876,8 @@
           this.animatedTurnover = 0;
           this.animatedPoints = 0;
           this.iphoneFragments = 0;
+          this.historyList = [];
+          localStorage.removeItem('tng_history_list');
         }
       }
     }
