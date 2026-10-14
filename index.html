@@ -91,9 +91,9 @@
     <div class="max-w-5xl mx-auto flex items-center justify-between">
       <div class="flex items-center gap-2.5">
         <div class="bg-[#FFCC00] text-[#002B66] text-xs font-black px-2.5 py-1 rounded-lg tracking-tighter uppercase shadow-md animate-pulse">
-          GO REWARDS
+          赢宇宙牛牛
         </div>
-        <span class="text-base font-extrabold tracking-wide text-white">Touch 'n Go 狂欢盛典</span>
+        <span class="text-base font-extrabold tracking-wide text-white">盲盒&礼品区</span>
       </div>
 
       <div class="flex items-center gap-2 text-xs">
@@ -143,14 +143,14 @@
         <div class="w-full md:w-1/2 space-y-4">
           <div>
             <span class="text-xs font-bold text-[#FFCC00] uppercase tracking-wider">限时 Go Rewards 专场</span>
-            <h2 class="text-2xl font-black text-white mt-0.5">iPhone 16 Pro 幸运盲盒</h2>
-            <p class="text-blue-100/80 text-xs mt-1">每次开启消耗 10 GO积分，100% 获得现金红包或实物碎片</p>
+            <h2 class="text-2xl font-black text-white mt-0.5">iPhone 18 Pro 幸运盲盒</h2>
+            <p class="text-blue-100/80 text-xs mt-1">每次开启消耗 10 GO积分，100% 获得NMC红包或实物碎片</p>
           </div>
 
           <!-- iPhone 碎片进度条 -->
           <div class="bg-[#00173d]/80 border border-white/10 rounded-2xl p-4 relative">
             <div class="flex justify-between items-center text-xs mb-2">
-              <span class="text-white font-bold flex items-center gap-1">📱 iPhone 16 碎片收集</span>
+              <span class="text-white font-bold flex items-center gap-1">📱 iPhone 18 碎片收集</span>
               <span class="text-[#FFCC00] font-mono font-bold" x-text="`${iphoneFragments} / 50`"></span>
             </div>
             <div class="w-full bg-black/40 h-3.5 rounded-full overflow-hidden p-0.5 border border-white/10 relative">
@@ -248,23 +248,23 @@
 
         // 扩充后的直兑商品清单
         storeItems: [
-          { name: "Spritzer 天然矿泉水 (箱)", cost: 5, turnoverReq: "5k流水", icon: "💧", tag: "入门热销" },
-          { name: "RGB 机械键盘", cost: 50, turnoverReq: "50k流水", icon: "⌨️", tag: "电竞推荐" },
-          { name: "Panasonic 智能微波炉", cost: 150, turnoverReq: "150k流水", icon: "微", tag: "实用家电" },
-          { name: "Marshall Acton II 音箱", cost: 250, turnoverReq: "250k流水", icon: "📻", tag: "潮品发烧" },
-          { name: "Haier 13kg 变频滚筒洗衣机", cost: 350, turnoverReq: "350k流水", icon: "🧺", tag: "高端家电" },
-          { name: "iPhone 16 Pro 256G", cost: 500, turnoverReq: "500k流水", icon: "📱", tag: "旗舰数码" },
-          { name: "Proton Persona 轿车", cost: 5000, turnoverReq: "5M流水", icon: "🚗", tag: "终极豪华大奖" }
+          { name: "RGB 机械键盘", cost: 5, turnoverReq: "5k流水", icon: "⌨️", tag: "HOT" },
+          { name: "AirPod", cost: 50, turnoverReq: "50k流水", icon: "💧", tag: "HOT" },
+          { name: "Ipad Air", cost: 150, turnoverReq: "150k流水", icon: "📱", tag: "HOT" },
+          { name: "Marshall Acton II", cost: 250, turnoverReq: "250k流水", icon: "📻", tag: "HOT" },
+          { name: "Honor X9e Pro", cost: 350, turnoverReq: "350k流水", icon: "📱", tag: "HOT" },
+          { name: "iPhone 18 Pro 256G", cost: 500, turnoverReq: "500k流水", icon: "📱", tag: "HOT" },
+          { name: "Tesla", cost: 5000, turnoverReq: "5M流水", icon: "🚗", tag: "终极豪华大奖" }
         ],
 
         prizePool: [
-          { name: "现金红包", value: 8, type: "cash", icon: "💵" },
-          { name: "现金红包", value: 18, type: "cash", icon: "💵" },
-          { name: "现金红包", value: 28, type: "cash", icon: "💵" },
+          { name: "NMC红包", value: 8, type: "cash", icon: "💵" },
+          { name: "NMC红包", value: 18, type: "cash", icon: "💵" },
+          { name: "NMC红包", value: 28, type: "cash", icon: "💵" },
           { name: "iPhone 碎片", value: 1, type: "fragment", icon: "🧩" },
-          { name: "现金红包", value: 58, type: "cash", icon: "💰" },
+          { name: "NMC红包", value: 58, type: "cash", icon: "💰" },
           { name: "iPhone 碎片", value: 3, type: "fragment", icon: "🧩" },
-          { name: "现金大奖", value: 888, type: "cash", icon: "🧧", isGrand: true },
+          { name: "NMC大奖", value: 888, type: "cash", icon: "🧧", isGrand: true },
           { name: "iPhone 碎片", value: 5, type: "fragment", icon: "🧩", isGrand: true },
         ],
 
