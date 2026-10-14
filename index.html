@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Touch 'n Go 风格 - 盲盒与直兑 (带后台管理与进度条)</title>
+  <title>Touch 'n Go 风格 - 盲盒与直兑 (支持10连抽)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Alpine.js -->
@@ -185,7 +185,7 @@
     <!-- 测试调试控制台 -->
     <div class="tng-card rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
       <span class="text-blue-100 font-medium flex items-center gap-1">
-        <span>⚡</span> 模拟控制台（点击快速增加流水/积分测试大额兑换）：
+        <span>⚡</span> 模拟控制台（点击快速增加流水/积分）：
       </span>
       <div class="space-x-1.5">
         <button @click="addTurnover(10000)" class="bg-white/10 hover:bg-white/20 text-white px-2.5 py-1 rounded-full transition active:scale-95">+10k 流水</button>
@@ -237,17 +237,27 @@
             </div>
           </div>
 
-          <button @click="open3DChest()" :disabled="points < 10 || isOpening" 
-                  :class="points < 10 || isOpening ? 'bg-white/10 text-white/40 cursor-not-allowed' : 'tng-btn-primary active:scale-95 shadow-lg shadow-yellow-500/20'"
-                  class="w-full py-4 rounded-2xl font-black text-base transition duration-200 uppercase tracking-wider flex items-center justify-center gap-2">
-            <span>🎁</span>
-            <span x-text="isOpening ? '宝箱剧烈震动开启中...' : '消耗 10 积分开启'"></span>
-          </button>
+          <!-- 抽奖按钮组 (单抽 / 10连抽) -->
+          <div class="grid grid-cols-2 gap-3">
+            <button @click="openChest(1)" :disabled="points < 10 || isOpening" 
+                    :class="points < 10 || isOpening ? 'bg-white/10 text-white/40 cursor-not-allowed' : 'tng-btn-primary active:scale-95 shadow-lg shadow-yellow-500/20'"
+                    class="py-3.5 rounded-2xl font-black text-xs md:text-sm transition duration-200 uppercase tracking-wider flex items-center justify-center gap-1.5">
+              <span>🎁</span>
+              <span x-text="isOpening ? '开启中...' : '单抽 (10积分)'"></span>
+            </button>
+
+            <button @click="openChest(10)" :disabled="points < 100 || isOpening" 
+                    :class="points < 100 || isOpening ? 'bg-white/10 text-white/40 cursor-not-allowed' : 'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-black active:scale-95 shadow-lg shadow-amber-400/30'"
+                    class="py-3.5 rounded-2xl font-black text-xs md:text-sm transition duration-200 uppercase tracking-wider flex items-center justify-center gap-1.5">
+              <span>⚡</span>
+              <span x-text="isOpening ? '狂暴连抽中...' : '🔥 10连抽 (100积分)'"></span>
+            </button>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- 🛍️ 前台直兑商城（带动态进度条） -->
+    <!-- 🛍️ 前台直兑商城 -->
     <section class="space-y-3">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-extrabold text-white flex items-center gap-2">
@@ -259,7 +269,6 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <template x-for="(item, index) in storeItems" :key="index">
           <div class="tng-card rounded-2xl p-4 card-hover-3d flex flex-col justify-between relative overflow-hidden gap-3">
-            
             <div x-show="item.tag" class="absolute top-0 right-0 bg-[#FFCC00] text-[#002B66] text-[9px] font-black px-2 py-0.5 rounded-bl-lg uppercase" x-text="item.tag"></div>
 
             <div class="flex items-center justify-between gap-3">
@@ -284,7 +293,6 @@
               </button>
             </div>
 
-            <!-- 商品独立兑换进度条 -->
             <div class="bg-black/30 border border-white/10 rounded-xl p-2.5 space-y-1.5">
               <div class="flex justify-between items-center text-[11px]">
                 <span class="text-blue-200/80">兑换进度:</span>
@@ -300,7 +308,6 @@
                 </div>
               </div>
             </div>
-
           </div>
         </template>
       </div>
@@ -308,26 +315,41 @@
 
   </main>
 
-  <!-- 3D 翻牌中奖弹窗 Modal -->
-  <div x-show="rewardResult" x-transition.opacity 
-       class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+  <!-- 单抽 / 10连抽 中奖汇总弹窗 Modal -->
+  <div x-show="rewardResults.length > 0" x-transition.opacity 
+       class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
     
-    <div class="tng-card border-2 border-[#FFCC00] rounded-3xl p-6 max-w-sm w-full text-center space-y-4 relative shadow-2xl transform transition-all">
-      <div class="text-xs font-extrabold text-[#FFCC00] uppercase tracking-widest animate-bounce">✨ 恭喜获得盲盒大奖 ✨</div>
+    <div class="tng-card border-2 border-[#FFCC00] rounded-3xl p-5 max-w-lg w-full text-center space-y-4 relative shadow-2xl my-auto">
+      <div class="text-xs font-extrabold text-[#FFCC00] uppercase tracking-widest animate-bounce">
+        ✨ <span x-text="rewardResults.length > 1 ? '🎉 10 连抽宝箱爆发结果 🎉' : '恭喜获得盲盒大奖'"></span> ✨
+      </div>
       
-      <div class="text-7xl my-3 animate-pulse" x-text="rewardResult?.icon"></div>
-      
-      <div>
-        <div class="text-2xl font-black text-white" x-text="rewardResult?.name"></div>
-        <div class="text-base font-bold text-[#FFCC00] mt-1" x-text="rewardResult?.type === 'cash' ? `RM ${rewardResult?.value}` : `+ ${rewardResult?.value} 碎片`"></div>
+      <!-- 多卡牌展示区 -->
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 max-h-[60vh] overflow-y-auto p-1">
+        <template x-for="(res, idx) in rewardResults" :key="idx">
+          <div class="bg-black/40 border rounded-xl p-2.5 flex flex-col items-center justify-center space-y-1 transform transition hover:scale-105"
+               :class="res.isGrand ? 'border-amber-400 bg-amber-500/20 shadow-md shadow-amber-500/30' : 'border-white/10'">
+            <div class="text-3xl" x-text="res.icon"></div>
+            <div class="text-[11px] font-bold text-white truncate w-full" x-text="res.name"></div>
+            <div class="text-xs font-extrabold text-[#FFCC00]" x-text="res.type === 'cash' ? `RM ${res.value}` : `+${res.value}碎片`"></div>
+          </div>
+        </template>
       </div>
 
-      <div class="space-y-2 pt-2">
-        <button @click="claimReward()" class="w-full tng-btn-primary py-3 rounded-xl font-bold text-xs active:scale-95">
-          存入 Wallet / 确认领取
+      <!-- 汇总文案 -->
+      <div class="bg-white/5 rounded-xl p-2.5 text-xs flex justify-around items-center border border-white/10">
+        <div>现金总计: <span class="text-emerald-400 font-mono font-black text-sm" x-text="`RM ${totalRewardCash}`"></span></div>
+        <div class="w-px h-4 bg-white/20"></div>
+        <div>碎片总计: <span class="text-amber-300 font-mono font-black text-sm" x-text="`+${totalRewardFragments} 个`"></span></div>
+      </div>
+
+      <div class="space-y-2 pt-1">
+        <button @click="claimAllRewards()" class="w-full tng-btn-primary py-3 rounded-xl font-bold text-xs active:scale-95">
+          存入 Wallet / 全部确认领取
         </button>
-        <button x-show="rewardResult?.type === 'cash'" @click="recycleReward()" class="w-full bg-white/10 hover:bg-white/20 text-white py-2.5 rounded-xl text-xs font-bold transition active:scale-95">
-          ♻️ 一键回收为 <span class="text-[#FFCC00] font-bold" x-text="`${rewardResult?.value} GO积分`"></span> (再抽一次)
+
+        <button x-show="totalRewardCash > 0" @click="recycleAllRewards()" class="w-full bg-white/10 hover:bg-white/20 text-white py-2.5 rounded-xl text-xs font-bold transition active:scale-95">
+          ♻️ 一键回收所有现金为 <span class="text-[#FFCC00] font-bold" x-text="`${totalRewardCash} GO积分`"></span>
         </button>
       </div>
     </div>
@@ -343,7 +365,17 @@
         animatedPoints: 50,
         iphoneFragments: 12,
         isOpening: false,
-        rewardResult: null,
+
+        // 支持多张卡牌结算
+        rewardResults: [],
+
+        get totalRewardCash() {
+          return this.rewardResults.reduce((acc, cur) => cur.type === 'cash' ? acc + cur.value : acc, 0);
+        },
+
+        get totalRewardFragments() {
+          return this.rewardResults.reduce((acc, cur) => cur.type === 'fragment' ? acc + cur.value : acc, 0);
+        },
 
         newItem: { name: '', cost: null, turnoverReq: '', tag: '', img: '' },
 
@@ -564,7 +596,7 @@
         },
 
         createBurstParticles() {
-          const pCount = 60;
+          const pCount = 80;
           const pGeo = new THREE.BufferGeometry();
           const positions = new Float32Array(pCount * 3);
           const velocities = [];
@@ -574,9 +606,9 @@
             positions[i*3+1] = 1;
             positions[i*3+2] = 0;
             velocities.push({
-              x: (Math.random() - 0.5) * 0.15,
-              y: Math.random() * 0.25 + 0.1,
-              z: (Math.random() - 0.5) * 0.15
+              x: (Math.random() - 0.5) * 0.2,
+              y: Math.random() * 0.3 + 0.1,
+              z: (Math.random() - 0.5) * 0.2
             });
           }
           pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -600,31 +632,131 @@
           }, 16);
         },
 
-        open3DChest() {
-          if (this.points < 10 || this.isOpening) return;
-          this.points -= 10;
+        // 通用开启函数 (支持 count = 1 或 10)
+        openChest(count) {
+          const cost = count * 10;
+          if (this.points < cost || this.isOpening) return;
+
+          this.points -= cost;
           this.animateValue('animatedPoints', this.points);
           this.isOpening = true;
 
           this.playSound('click');
+          if (navigator.vibrate) navigator.vibrate(count > 1 ? [50, 100, 50, 100, 150] : [30, 50, 30, 50, 100]);
 
-          if (navigator.vibrate) navigator.vibrate([30, 50, 30, 50, 100]);
+          const shakeDuration = count > 1 ? 0.08 : 0.05;
+          const shakeRepeat = count > 1 ? 10 : 6;
 
           gsap.timeline()
-            .to(this.chestGroup.scale, { x: 0.85, y: 0.85, z: 0.85, duration: 0.2 })
+            .to(this.chestGroup.scale, { x: 0.8, y: 0.8, z: 0.8, duration: 0.2 })
             .to(this.chestGroup.position, { 
-              x: () => (Math.random() - 0.5) * 0.15, 
-              y: () => (Math.random() - 0.5) * 0.15, 
-              duration: 0.05, 
-              repeat: 6, 
+              x: () => (Math.random() - 0.5) * 0.2, 
+              y: () => (Math.random() - 0.5) * 0.2, 
+              duration: shakeDuration, 
+              repeat: shakeRepeat, 
               yoyo: true 
             })
-            .to(this.chestGroup.scale, { x: 1.15, y: 1.15, z: 1.15, duration: 0.15, ease: "back.out(2)" })
+            .to(this.chestGroup.scale, { x: 1.2, y: 1.2, z: 1.2, duration: 0.15, ease: "back.out(2)" })
             .to(this.lidGroup.position, { y: 2.8, duration: 0.3, ease: "power4.out" })
             .call(() => {
               this.createBurstParticles();
               this.playSound('win');
-              const prize = this.prizePool[Math.floor(Math.random() * this.prizePool.length)];
-              this.rewardResult = prize;
-              confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
-              this
+
+              // 随机抽取指定数量结果
+              const pulledPrizes = [];
+              for (let i = 0; i < count; i++) {
+                const prize = this.prizePool[Math.floor(Math.random() * this.prizePool.length)];
+                pulledPrizes.push({ ...prize });
+              }
+
+              this.rewardResults = pulledPrizes;
+              confetti({ particleCount: count * 15, spread: 80 + count * 2, origin: { y: 0.5 } });
+              this.isOpening = false;
+              
+              gsap.to(this.chestGroup.scale, { x: 1, y: 1, z: 1, duration: 0.4 });
+              gsap.to(this.lidGroup.position, { y: 1.1, duration: 0.5, delay: 0.8 });
+            });
+        },
+
+        claimAllRewards() {
+          this.playSound('click');
+          const fragmentTotal = this.totalRewardFragments;
+          if (fragmentTotal > 0) {
+            this.iphoneFragments += fragmentTotal;
+            if (this.iphoneFragments >= 50) {
+              this.redeemIphone();
+            }
+          }
+          this.rewardResults = [];
+        },
+
+        recycleAllRewards() {
+          if (this.rewardResults.length === 0) return;
+          this.playSound('click');
+          
+          const cashTotal = this.totalRewardCash;
+          const fragmentTotal = this.totalRewardFragments;
+
+          if (fragmentTotal > 0) {
+            this.iphoneFragments += fragmentTotal;
+          }
+
+          if (cashTotal > 0) {
+            this.points += cashTotal;
+            this.animateValue('animatedPoints', this.points);
+            alert(`♻️ 已将现金奖励 (RM ${cashTotal}) 回收转换为 ${cashTotal} GO积分！碎片额外累积 +${fragmentTotal}`);
+          }
+
+          if (this.iphoneFragments >= 50) {
+            this.redeemIphone();
+          }
+
+          this.rewardResults = [];
+        },
+
+        redeemIphone() {
+          if (this.iphoneFragments < 50) return;
+          this.playSound('win');
+          confetti({ particleCount: 150, spread: 100, origin: { y: 0.4 } });
+          this.iphoneFragments -= 50;
+          alert("🎉 恭喜！已成功兑换一台 iPhone 16 Pro 实物奖励，请联系客服登记地址发放！");
+        },
+
+        addTurnover(amount) {
+          this.playSound('click');
+          this.turnover += amount;
+          this.points += Math.floor(amount / 1000);
+          this.animateValue('animatedTurnover', this.turnover);
+          this.animateValue('animatedPoints', this.points);
+        },
+
+        animateValue(key, target) {
+          gsap.to(this, {
+            [key]: target,
+            duration: 0.8,
+            snap: { [key]: 1 },
+            ease: "power1.out"
+          });
+        },
+
+        redeem(name, cost) {
+          if (this.points < cost) return;
+          this.playSound('win');
+          this.points -= cost;
+          this.animateValue('animatedPoints', this.points);
+          confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+          alert(`兑换成功！已提交客服发放：${name}`);
+        },
+
+        resetData() {
+          this.turnover = 0;
+          this.points = 0;
+          this.animatedTurnover = 0;
+          this.animatedPoints = 0;
+          this.iphoneFragments = 0;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
