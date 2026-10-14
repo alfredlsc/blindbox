@@ -3,13 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Touch 'n Go 风格 - 盲盒与直兑 (带实时中奖播报)</title>
+  <title>Touch 'n Go 风格 - 盲盒与直兑 (神秘数码盲盒版)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Alpine.js -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <!-- Three.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <!-- GSAP -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <!-- Canvas Confetti -->
@@ -73,6 +71,29 @@
       box-shadow: 0 0 10px #fff, 0 0 20px #FFCC00;
       border-radius: 999px;
     }
+
+    /* 走马灯无限滚动动画：已减速至 90s */
+    @keyframes marquee {
+      0% { transform: translateX(0%); }
+      100% { transform: translateX(-50%); }
+    }
+    .animate-marquee {
+      display: flex;
+      width: max-content;
+      animation: marquee 90s linear infinite; /* 调整为 90s */
+    }
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
+
+    /* 盲盒图片悬浮与光晕特效 */
+    @keyframes boxFloat {
+      0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0 15px 25px rgba(236, 72, 153, 0.4)); }
+      50% { transform: translateY(-12px) scale(1.02); filter: drop-shadow(0 25px 35px rgba(236, 72, 153, 0.7)); }
+    }
+    .box-image-float {
+      animation: boxFloat 3.8s ease-in-out infinite;
+    }
   </style>
 </head>
 <body class="tng-bg min-h-screen pb-20" x-data="tngApp()" x-init="initApp()">
@@ -103,6 +124,37 @@
       </div>
     </div>
   </header>
+
+  <!-- 📢 走马灯中奖横幅广播 (平滑 90 秒滚动) -->
+  <div class="bg-gradient-to-r from-[#001233] via-[#002866] to-[#001233] border-b border-amber-500/30 py-2 overflow-hidden shadow-xl relative">
+    <div class="max-w-5xl mx-auto flex items-center">
+      <div class="bg-[#FFCC00] text-[#002B66] text-[11px] font-black px-3 py-1 rounded-r-full shadow-lg z-20 flex items-center gap-1 flex-shrink-0 mr-2">
+        <span class="animate-bounce">📢</span> 中奖走马灯
+      </div>
+      
+      <div class="overflow-hidden relative w-full">
+        <div class="animate-marquee gap-6 items-center">
+          <template x-for="(msg, idx) in allMarqueeList" :key="'m1-' + idx">
+            <div class="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-full px-3 py-1 text-xs text-blue-100 flex-shrink-0 shadow">
+              <span class="font-bold text-amber-300" x-text="msg.user"></span>
+              <span class="text-white/70">抽中</span>
+              <span class="font-black text-yellow-400" x-text="msg.prize"></span>
+              <span class="text-[10px] text-blue-200/50 font-mono" x-text="`[${msg.time}]`"></span>
+            </div>
+          </template>
+          
+          <template x-for="(msg, idx) in allMarqueeList" :key="'m2-' + idx">
+            <div class="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-full px-3 py-1 text-xs text-blue-100 flex-shrink-0 shadow">
+              <span class="font-bold text-amber-300" x-text="msg.user"></span>
+              <span class="text-white/70">抽中</span>
+              <span class="font-black text-yellow-400" x-text="msg.prize"></span>
+              <span class="text-[10px] text-blue-200/50 font-mono" x-text="`[${msg.time}]`"></span>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- 后台管理面板 -->
   <div x-show="showAdmin" x-transition class="max-w-4xl mx-auto px-4 mt-6">
@@ -182,28 +234,6 @@
 
   <main class="max-w-4xl mx-auto px-4 mt-6 space-y-6">
 
-    <!-- 📢 实时全服中奖滚动播报 (跑马灯) -->
-    <div class="bg-[#00173d]/90 border border-amber-500/30 rounded-2xl px-4 py-2.5 flex items-center gap-3 overflow-hidden shadow-lg">
-      <div class="flex items-center gap-1.5 text-xs font-black text-[#FFCC00] flex-shrink-0">
-        <span class="animate-bounce">📢</span> 实时中奖播报:
-      </div>
-      <div class="overflow-hidden relative w-full h-5 text-xs text-blue-100 flex items-center">
-        <template x-if="liveTickerList.length > 0">
-          <div class="absolute transition-all duration-500 ease-out flex items-center gap-2"
-               :style="`transform: translateY(-${tickerIndex * 20}px);`">
-            <template x-for="(msg, idx) in liveTickerList" :key="idx">
-              <div class="h-5 flex items-center gap-2 w-full text-ellipsis whitespace-nowrap">
-                <span class="font-bold text-amber-300" x-text="msg.user"></span>
-                <span>抽中了</span>
-                <span class="font-black text-yellow-400" x-text="msg.prize"></span>
-                <span class="text-[10px] text-blue-200/50" x-text="`(${msg.time})`"></span>
-              </div>
-            </template>
-          </div>
-        </template>
-      </div>
-    </div>
-
     <!-- 测试调试控制台 -->
     <div class="tng-card rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
       <span class="text-blue-100 font-medium flex items-center gap-1">
@@ -217,14 +247,30 @@
       </div>
     </div>
 
-    <!-- 3D 盲盒抽奖区 -->
+    <!-- 神秘数码盲盒 3D 抽奖区 -->
     <section class="tng-card rounded-3xl p-6 border border-white/20 relative overflow-hidden shadow-2xl animate-glow">
       <div class="flex flex-col md:flex-row items-center justify-between gap-6">
-        <div class="w-full md:w-1/2 relative flex flex-col items-center justify-center min-h-[260px] bg-black/30 rounded-2xl border border-white/10 overflow-hidden shadow-inner">
-          <div class="absolute top-3 left-3 bg-[#FFCC00] text-[#002B66] text-[10px] font-black px-2.5 py-0.5 rounded-full z-10 shadow">3D GO BOX</div>
-          <div id="canvas-container" class="w-full h-[260px] cursor-grab active:cursor-grabbing"></div>
-          <p class="text-center text-[11px] text-blue-200/70 pb-2 flex items-center gap-1">
-            <span>👉</span> 拖拽可 360° 旋转观察 3D 悬浮宝箱
+        
+        <!-- 神秘数码盲盒展示容器 -->
+        <div class="w-full md:w-1/2 relative flex flex-col items-center justify-center min-h-[300px] bg-gradient-to-b from-black/70 via-[#00173d] to-black/80 rounded-2xl border border-pink-500/30 overflow-hidden shadow-inner">
+          <div class="absolute top-3 left-3 bg-[#FFCC00] text-[#002B66] text-[10px] font-black px-2.5 py-0.5 rounded-full z-20 shadow-md">FUTURE LUCKY BOX</div>
+          
+          <div class="absolute top-3 right-3 bg-amber-400/20 border border-amber-400/40 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full z-20 animate-pulse">
+            📱 包含 iPhone 16 Pro
+          </div>
+          <div class="absolute bottom-10 right-3 bg-pink-500/20 border border-pink-400/40 text-pink-300 text-[10px] font-bold px-2 py-0.5 rounded-full z-20">
+            🧧 最高 RM888 现金
+          </div>
+
+          <!-- 指定 3D 神秘数码盲盒图片 (带震动/弹跳/悬浮光晕) -->
+          <div id="box-image-container" class="relative z-10 flex items-center justify-center my-auto cursor-pointer p-2">
+            <img src="https://lh3.googleusercontent.com/gg/AAYL33POn81m_1N9-v_41Q1s12891391801293_1_1" 
+                 alt="神秘数码盲盒" 
+                 class="w-56 h-56 object-contain rounded-2xl box-image-float border border-pink-500/30 shadow-2xl shadow-purple-500/30">
+          </div>
+          
+          <p class="text-center text-[11px] text-pink-200/80 pb-2 z-20 mt-auto flex items-center gap-1">
+            <span>✨</span> 神秘数码盲盒 · 点击下方按钮拆盒
           </p>
         </div>
 
@@ -259,7 +305,7 @@
             </div>
           </div>
 
-          <!-- 抽奖按钮组 (单抽 / 10连抽) -->
+          <!-- 抽奖按钮组 -->
           <div class="grid grid-cols-2 gap-3">
             <button @click="openChest(1)" :disabled="points < 10 || isOpening" 
                     :class="points < 10 || isOpening ? 'bg-white/10 text-white/40 cursor-not-allowed' : 'tng-btn-primary active:scale-95 shadow-lg shadow-yellow-500/20'"
@@ -283,7 +329,7 @@
     <section class="tng-card rounded-2xl p-4 space-y-3">
       <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
         <h3 class="text-sm font-extrabold text-white flex items-center gap-2">
-          <span>📜</span> 个人中奖历史记录 (My History)
+          <span>📜</span> 个人中奖历史明细 (My History)
           <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-normal" x-text="`${historyList.length} 条记录`"></span>
         </h3>
         <div class="flex items-center gap-3 text-xs">
@@ -429,15 +475,23 @@
         rewardResults: [],
         historyList: [],
 
-        // 实时中奖跑马灯数据
-        liveTickerList: [
-          { user: "Az***", prize: "RM 888 现金大奖 🧧", time: "刚才" },
-          { user: "Sherman***", prize: "5 个 iPhone 碎片 🧩", time: "1分钟前" },
-          { user: "Alex88***", prize: "RM 58 现金红包 💰", time: "2分钟前" },
-          { user: "Kevin***", prize: "3 个 iPhone 碎片 🧩", time: "3分钟前" },
-          { user: "MeiLing***", prize: "RM 28 现金红包 💵", time: "5分钟前" }
+        mockPlayerMarquee: [
+          { user: "Sherman***", prize: "5 个 iPhone 碎片 🧩", time: "10:12" },
+          { user: "Alex88***", prize: "RM 888 现金大奖 🧧", time: "10:08" },
+          { user: "Kevin***", prize: "3 个 iPhone 碎片 🧩", time: "09:55" },
+          { user: "MeiLing***", prize: "RM 58 现金红包 💰", time: "09:42" },
+          { user: "Jason***", prize: "RM 28 现金红包 💵", time: "09:30" },
+          { user: "Wong***", prize: "1 个 iPhone 碎片 🧩", time: "09:15" }
         ],
-        tickerIndex: 0,
+
+        get allMarqueeList() {
+          const userHistoryFormatted = this.historyList.map(item => ({
+            user: "Az (你)",
+            prize: item.type === 'cash' ? `RM ${item.value} 现金` : `${item.value}个 iPhone 碎片`,
+            time: item.time
+          }));
+          return [...userHistoryFormatted, ...this.mockPlayerMarquee];
+        },
 
         get totalRewardCash() {
           return this.rewardResults.reduce((acc, cur) => cur.type === 'cash' ? acc + cur.value : acc, 0);
@@ -481,15 +535,6 @@
               this.historyList = [];
             }
           }
-
-          this.init3D();
-          this.startTickerLoop();
-        },
-
-        startTickerLoop() {
-          setInterval(() => {
-            this.tickerIndex = (this.tickerIndex + 1) % this.liveTickerList.length;
-          }, 3000);
         },
 
         saveHistory() {
@@ -549,8 +594,6 @@
           reader.readAsDataURL(file);
         },
 
-        scene: null, camera: null, renderer: null, chestGroup: null, lidGroup: null, light1: null,
-
         prizePool: [
           { name: "现金红包", value: 8, type: "cash", icon: "💵" },
           { name: "现金红包", value: 18, type: "cash", icon: "💵" },
@@ -587,148 +630,6 @@
           } catch(e) {}
         },
 
-        init3D() {
-          this.$nextTick(() => {
-            setTimeout(() => { this.buildThreeScene(); }, 100);
-          });
-        },
-
-        buildThreeScene() {
-          const container = document.getElementById('canvas-container');
-          if (!container) return;
-
-          const width = container.clientWidth || 320;
-          const height = container.clientHeight || 260;
-
-          this.scene = new THREE.Scene();
-          this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-          this.camera.position.set(0, 1.2, 6.5);
-
-          this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-          this.renderer.setSize(width, height);
-          this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-          
-          container.innerHTML = '';
-          container.appendChild(this.renderer.domElement);
-
-          this.light1 = new THREE.DirectionalLight(0xFFCC00, 2.2);
-          this.light1.position.set(3, 5, 5);
-          this.scene.add(this.light1);
-
-          const light2 = new THREE.DirectionalLight(0x005FB8, 1.8);
-          light2.position.set(-3, -3, 3);
-          this.scene.add(light2);
-
-          const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
-          this.scene.add(ambientLight);
-
-          this.chestGroup = new THREE.Group();
-
-          const baseGeo = new THREE.BoxGeometry(2, 2, 2);
-          const blueMat = new THREE.MeshStandardMaterial({ color: 0x005FB8, roughness: 0.2, metalness: 0.5 });
-          const yellowMat = new THREE.MeshStandardMaterial({ color: 0xFFCC00, roughness: 0.1, metalness: 0.8 });
-          
-          const baseMesh = new THREE.Mesh(baseGeo, blueMat);
-          this.chestGroup.add(baseMesh);
-
-          const ribbonV = new THREE.Mesh(new THREE.BoxGeometry(2.05, 2.05, 0.3), yellowMat);
-          const ribbonH = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.05, 2.05), yellowMat);
-          this.chestGroup.add(ribbonV);
-          this.chestGroup.add(ribbonH);
-
-          this.lidGroup = new THREE.Group();
-          const lidMesh = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.4, 2.15), yellowMat);
-          this.lidGroup.add(lidMesh);
-          this.lidGroup.position.set(0, 1.1, 0);
-          this.chestGroup.add(this.lidGroup);
-
-          this.chestGroup.rotation.y = 0.5;
-          this.chestGroup.rotation.x = 0.2;
-          this.scene.add(this.chestGroup);
-
-          let isDragging = false;
-          let prevMouse = { x: 0, y: 0 };
-          
-          container.addEventListener('mousedown', (e) => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; });
-          window.addEventListener('mouseup', () => isDragging = false);
-          container.addEventListener('mousemove', (e) => {
-            if (isDragging && !this.isOpening) {
-              this.chestGroup.rotation.y += (e.clientX - prevMouse.x) * 0.01;
-              this.chestGroup.rotation.x += (e.clientY - prevMouse.y) * 0.01;
-              prevMouse = { x: e.clientX, y: e.clientY };
-            }
-          });
-
-          container.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1) {
-              isDragging = true;
-              prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            }
-          });
-          window.addEventListener('touchend', () => isDragging = false);
-          container.addEventListener('touchmove', (e) => {
-            if (isDragging && !this.isOpening && e.touches.length === 1) {
-              this.chestGroup.rotation.y += (e.touches[0].clientX - prevMouse.x) * 0.01;
-              this.chestGroup.rotation.x += (e.touches[0].clientY - prevMouse.y) * 0.01;
-              prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            }
-          });
-
-          let clock = new THREE.Clock();
-          const animate = () => {
-            requestAnimationFrame(animate);
-            const elapsedTime = clock.getElapsedTime();
-
-            if (!isDragging && !this.isOpening) {
-              this.chestGroup.rotation.y += 0.008;
-              this.chestGroup.position.y = Math.sin(elapsedTime * 2) * 0.1;
-            }
-
-            this.light1.position.x = Math.sin(elapsedTime * 1.5) * 4;
-            this.light1.position.z = Math.cos(elapsedTime * 1.5) * 4;
-
-            this.renderer.render(this.scene, this.camera);
-          };
-          animate();
-        },
-
-        createBurstParticles() {
-          const pCount = 80;
-          const pGeo = new THREE.BufferGeometry();
-          const positions = new Float32Array(pCount * 3);
-          const velocities = [];
-
-          for(let i=0; i<pCount; i++) {
-            positions[i*3] = 0;
-            positions[i*3+1] = 1;
-            positions[i*3+2] = 0;
-            velocities.push({
-              x: (Math.random() - 0.5) * 0.2,
-              y: Math.random() * 0.3 + 0.1,
-              z: (Math.random() - 0.5) * 0.2
-            });
-          }
-          pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-          const pMat = new THREE.PointsMaterial({ color: 0xFFCC00, size: 0.12, transparent: true, opacity: 1 });
-          const pMesh = new THREE.Points(pGeo, pMat);
-          this.scene.add(pMesh);
-
-          let pAnim = setInterval(() => {
-            const pos = pGeo.attributes.position.array;
-            for(let i=0; i<pCount; i++) {
-              pos[i*3] += velocities[i].x;
-              pos[i*3+1] += velocities[i].y;
-              pos[i*3+2] += velocities[i].z;
-            }
-            pGeo.attributes.position.needsUpdate = true;
-            pMat.opacity -= 0.04;
-            if(pMat.opacity <= 0) {
-              clearInterval(pAnim);
-              this.scene.remove(pMesh);
-            }
-          }, 16);
-        },
-
         openChest(count) {
           const cost = count * 10;
           if (this.points < cost || this.isOpening) return;
@@ -740,22 +641,21 @@
           this.playSound('click');
           if (navigator.vibrate) navigator.vibrate(count > 1 ? [50, 100, 50, 100, 150] : [30, 50, 30, 50, 100]);
 
-          const shakeDuration = count > 1 ? 0.08 : 0.05;
-          const shakeRepeat = count > 1 ? 10 : 6;
+          const boxEl = document.getElementById('box-image-container');
 
+          // GSAP 剧烈震动 + 向上放大弹跳动画
           gsap.timeline()
-            .to(this.chestGroup.scale, { x: 0.8, y: 0.8, z: 0.8, duration: 0.2 })
-            .to(this.chestGroup.position, { 
-              x: () => (Math.random() - 0.5) * 0.2, 
-              y: () => (Math.random() - 0.5) * 0.2, 
-              duration: shakeDuration, 
-              repeat: shakeRepeat, 
+            .to(boxEl, { scale: 0.85, duration: 0.15 })
+            .to(boxEl, { 
+              x: () => (Math.random() - 0.5) * 25, 
+              y: () => (Math.random() - 0.5) * 25, 
+              rotation: () => (Math.random() - 0.5) * 18,
+              duration: 0.05, 
+              repeat: 12, 
               yoyo: true 
             })
-            .to(this.chestGroup.scale, { x: 1.2, y: 1.2, z: 1.2, duration: 0.15, ease: "back.out(2)" })
-            .to(this.lidGroup.position, { y: 2.8, duration: 0.3, ease: "power4.out" })
+            .to(boxEl, { scale: 1.3, y: -20, rotation: 0, duration: 0.2, ease: "back.out(2)" })
             .call(() => {
-              this.createBurstParticles();
               this.playSound('win');
 
               const pulledPrizes = [];
@@ -766,27 +666,17 @@
                 const logItem = { ...prize, time: nowTime };
                 pulledPrizes.push(logItem);
                 
-                // 追加至个人历史记录
                 this.historyList.unshift(logItem);
-
-                // 如果抽到大奖，同步推进到公共实时跑马灯
-                if (prize.value >= 50 || prize.isGrand) {
-                  this.liveTickerList.unshift({
-                    user: "Az (你)",
-                    prize: prize.type === 'cash' ? `RM ${prize.value} 现金红包` : `${prize.value}个 iPhone 碎片`,
-                    time: "刚才"
-                  });
-                }
               }
 
               this.saveHistory();
 
               this.rewardResults = pulledPrizes;
-              confetti({ particleCount: count * 15, spread: 80 + count * 2, origin: { y: 0.5 } });
+              // 爆金粉粒子烟花特效
+              confetti({ particleCount: count * 20, spread: 90, origin: { y: 0.5 } });
               this.isOpening = false;
               
-              gsap.to(this.chestGroup.scale, { x: 1, y: 1, z: 1, duration: 0.4 });
-              gsap.to(this.lidGroup.position, { y: 1.1, duration: 0.5, delay: 0.8 });
+              gsap.to(boxEl, { scale: 1, x: 0, y: 0, duration: 0.35 });
             });
         },
 
@@ -826,12 +716,16 @@
             this.playSound('win');
             confetti({ particleCount: 150, spread: 100, origin: { y: 0.4 } });
             this.iphoneFragments -= 50;
-            
-            this.liveTickerList.unshift({
-              user: "Az (你)",
-              prize: "📱 iPhone 16 Pro 256G (实物大奖)",
-              time: "刚才"
+
+            const nowTime = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            this.historyList.unshift({
+              name: "iPhone 16 Pro 256G (实物兑换)",
+              value: 1,
+              type: "device",
+              icon: "📱",
+              time: nowTime
             });
+            this.saveHistory();
 
             alert("🎉 恭喜！已成功兑换一台 iPhone 16 Pro 实物奖励，请联系客服登记地址发放！");
           }
@@ -861,11 +755,15 @@
           this.animateValue('animatedPoints', this.points);
           confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
 
-          this.liveTickerList.unshift({
-            user: "Az (你)",
-            prize: name,
-            time: "刚才"
+          const nowTime = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          this.historyList.unshift({
+            name: `${name} (直兑)`,
+            value: 1,
+            type: "store",
+            icon: "🎁",
+            time: nowTime
           });
+          this.saveHistory();
 
           alert(`兑换成功！已提交客服发放：${name}`);
         },
