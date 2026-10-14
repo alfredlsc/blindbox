@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Touch 'n Go 风格 - 盲盒与直兑 (神秘数码盲盒版)</title>
+  <title>Touch 'n Go 风格 - 盲盒与直兑 (Base64零依赖稳定版)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Alpine.js -->
@@ -72,7 +72,7 @@
       border-radius: 999px;
     }
 
-    /* 走马灯无限滚动动画：已减速至 90s */
+    /* 走马灯无限滚动动画：90s */
     @keyframes marquee {
       0% { transform: translateX(0%); }
       100% { transform: translateX(-50%); }
@@ -80,16 +80,16 @@
     .animate-marquee {
       display: flex;
       width: max-content;
-      animation: marquee 90s linear infinite; /* 调整为 90s */
+      animation: marquee 90s linear infinite;
     }
     .animate-marquee:hover {
       animation-play-state: paused;
     }
 
-    /* 盲盒图片悬浮与光晕特效 */
+    /* 盲盒悬浮与光晕特效 */
     @keyframes boxFloat {
-      0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0 15px 25px rgba(236, 72, 153, 0.4)); }
-      50% { transform: translateY(-12px) scale(1.02); filter: drop-shadow(0 25px 35px rgba(236, 72, 153, 0.7)); }
+      0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0 15px 25px rgba(236, 72, 153, 0.5)); }
+      50% { transform: translateY(-12px) scale(1.02); filter: drop-shadow(0 25px 35px rgba(236, 72, 153, 0.8)); }
     }
     .box-image-float {
       animation: boxFloat 3.8s ease-in-out infinite;
@@ -125,7 +125,7 @@
     </div>
   </header>
 
-  <!-- 📢 走马灯中奖横幅广播 (平滑 90 秒滚动) -->
+  <!-- 📢 走马灯中奖横幅广播 (90 秒平滑流动) -->
   <div class="bg-gradient-to-r from-[#001233] via-[#002866] to-[#001233] border-b border-amber-500/30 py-2 overflow-hidden shadow-xl relative">
     <div class="max-w-5xl mx-auto flex items-center">
       <div class="bg-[#FFCC00] text-[#002B66] text-[11px] font-black px-3 py-1 rounded-r-full shadow-lg z-20 flex items-center gap-1 flex-shrink-0 mr-2">
@@ -247,26 +247,73 @@
       </div>
     </div>
 
-    <!-- 神秘数码盲盒 3D 抽奖区 -->
+    <!-- 神秘数码盲盒 抽奖区 -->
     <section class="tng-card rounded-3xl p-6 border border-white/20 relative overflow-hidden shadow-2xl animate-glow">
       <div class="flex flex-col md:flex-row items-center justify-between gap-6">
         
-        <!-- 神秘数码盲盒展示容器 -->
+        <!-- 盲盒展示容器 -->
         <div class="w-full md:w-1/2 relative flex flex-col items-center justify-center min-h-[300px] bg-gradient-to-b from-black/70 via-[#00173d] to-black/80 rounded-2xl border border-pink-500/30 overflow-hidden shadow-inner">
-          <div class="absolute top-3 left-3 bg-[#FFCC00] text-[#002B66] text-[10px] font-black px-2.5 py-0.5 rounded-full z-20 shadow-md">FUTURE LUCKY BOX</div>
+          <div class="absolute top-3 left-3 bg-[#FFCC00] text-[#002B66] text-[10px] font-black px-2.5 py-0.5 rounded-full z-20 shadow-md">牛牛幸运盲盒</div>
           
           <div class="absolute top-3 right-3 bg-amber-400/20 border border-amber-400/40 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full z-20 animate-pulse">
-            📱 包含 iPhone 16 Pro
+            📱 包含 iPhone 18 Pro
           </div>
           <div class="absolute bottom-10 right-3 bg-pink-500/20 border border-pink-400/40 text-pink-300 text-[10px] font-bold px-2 py-0.5 rounded-full z-20">
             🧧 最高 RM888 现金
           </div>
 
-          <!-- 指定 3D 神秘数码盲盒图片 (带震动/弹跳/悬浮光晕) -->
+          <!-- 使用纯真实 SVG 渲染的 3D 神秘数码盲盒 (直接内嵌，100% 绝对不会显示不出来或断图) -->
           <div id="box-image-container" class="relative z-10 flex items-center justify-center my-auto cursor-pointer p-2">
-            <img src="https://lh3.googleusercontent.com/gg/AAYL33POn81m_1N9-v_41Q1s12891391801293_1_1" 
-                 alt="神秘数码盲盒" 
-                 class="w-56 h-56 object-contain rounded-2xl box-image-float border border-pink-500/30 shadow-2xl shadow-purple-500/30">
+            <div class="w-56 h-56 box-image-float relative flex items-center justify-center">
+              <svg viewBox="0 0 300 300" class="w-full h-full drop-shadow-[0_20px_35px_rgba(236,72,153,0.6)]">
+                <defs>
+                  <linearGradient id="boxTop" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#4c1d95"/>
+                    <stop offset="100%" stop-color="#1e1b4b"/>
+                  </linearGradient>
+                  <linearGradient id="boxLeft" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#831843"/>
+                    <stop offset="100%" stop-color="#500724"/>
+                  </linearGradient>
+                  <linearGradient id="boxRight" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#a855f7"/>
+                    <stop offset="100%" stop-color="#3b0764"/>
+                  </linearGradient>
+                  <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#fef08a"/>
+                    <stop offset="50%" stop-color="#eab308"/>
+                    <stop offset="100%" stop-color="#ca8a04"/>
+                  </linearGradient>
+                </defs>
+                <!-- 立体盒顶 -->
+                <polygon points="150,30 260,80 150,130 40,80" fill="url(#boxTop)" stroke="#a855f7" stroke-width="2"/>
+                <!-- 立体盒左侧 -->
+                <polygon points="40,80 150,130 150,260 40,210" fill="url(#boxLeft)" stroke="#ec4899" stroke-width="2"/>
+                <!-- 立体盒右侧 -->
+                <polygon points="150,130 260,80 260,210 150,260" fill="url(#boxRight)" stroke="#3b0764" stroke-width="2"/>
+
+                <!-- 盒顶金带 -->
+                <polygon points="150,30 180,43.6 150,57.2 120,43.6" fill="url(#gold)"/>
+                <polygon points="205,55 235,68.6 150,107.2 120,93.6" fill="url(#gold)"/>
+
+                <!-- 盒身金丝带与装饰图案 -->
+                <polygon points="135,123 165,137 165,260 135,246" fill="url(#gold)" opacity="0.9"/>
+                <polygon points="40,130 150,180 150,195 40,145" fill="url(#gold)" opacity="0.7"/>
+                <polygon points="150,180 260,130 260,145 150,195" fill="url(#gold)" opacity="0.7"/>
+
+                <!-- 科技线条 & 主文字 -->
+                <rect x="65" y="145" width="70" height="40" rx="6" transform="skewY(20)" fill="#000" opacity="0.4" stroke="#eab308" stroke-width="1.5"/>
+                <text x="80" y="165" fill="#fef08a" font-size="12" font-weight="900" transform="skewY(20)">牛牛</text>
+                <text x="75" y="180" fill="#fff" font-size="10" font-weight="bold" transform="skewY(20)">幸运盲盒</text>
+
+                <text x="170" y="125" fill="#fef08a" font-size="14" font-weight="900" transform="skewY(-20)">IPHONE 还是红包 ？</text>
+                <text x="172" y="145" fill="#ec4899" font-size="11" font-weight="bold" transform="skewY(-20)">等你拆</text>
+
+                <!-- 悬浮问号与光斑 -->
+                <circle cx="150" cy="80" r="18" fill="#eab308" opacity="0.9"/>
+                <text x="144" y="87" fill="#000" font-size="20" font-weight="900">?</text>
+              </svg>
+            </div>
           </div>
           
           <p class="text-center text-[11px] text-pink-200/80 pb-2 z-20 mt-auto flex items-center gap-1">
@@ -277,14 +324,14 @@
         <div class="w-full md:w-1/2 space-y-4">
           <div>
             <span class="text-xs font-bold text-[#FFCC00] uppercase tracking-wider">限时 Go Rewards 专场</span>
-            <h2 class="text-2xl font-black text-white mt-0.5">iPhone 16 Pro 幸运盲盒</h2>
+            <h2 class="text-2xl font-black text-white mt-0.5">iPhone 18 Pro 幸运盲盒</h2>
             <p class="text-blue-100/80 text-xs mt-1">每次开启消耗 10 GO积分，100% 获得现金红包或实物碎片</p>
           </div>
 
           <!-- iPhone 碎片收集与自选兑换区域 -->
           <div class="bg-[#00173d]/80 border border-white/10 rounded-2xl p-4 relative space-y-2">
             <div class="flex justify-between items-center text-xs">
-              <span class="text-white font-bold flex items-center gap-1">📱 iPhone 16 碎片收集</span>
+              <span class="text-white font-bold flex items-center gap-1">📱 iPhone 18 碎片收集</span>
               <span class="text-[#FFCC00] font-mono font-bold" x-text="`${iphoneFragments} / 50`"></span>
             </div>
             
@@ -300,7 +347,7 @@
                       :disabled="iphoneFragments < 50"
                       :class="iphoneFragments >= 50 ? 'bg-emerald-400 text-slate-950 font-black animate-bounce shadow-lg shadow-emerald-400/30 hover:scale-105' : 'bg-white/10 text-white/30 cursor-not-allowed'"
                       class="px-3 py-1.5 rounded-lg text-xs font-bold transition">
-                <span x-text="iphoneFragments >= 50 ? '🎁 兑换 iPhone 16' : '未集齐 (50)'"></span>
+                <span x-text="iphoneFragments >= 50 ? '🎁 兑换 iPhone 18' : '未集齐 (50)'"></span>
               </button>
             </div>
           </div>
@@ -643,7 +690,6 @@
 
           const boxEl = document.getElementById('box-image-container');
 
-          // GSAP 剧烈震动 + 向上放大弹跳动画
           gsap.timeline()
             .to(boxEl, { scale: 0.85, duration: 0.15 })
             .to(boxEl, { 
@@ -672,7 +718,6 @@
               this.saveHistory();
 
               this.rewardResults = pulledPrizes;
-              // 爆金粉粒子烟花特效
               confetti({ particleCount: count * 20, spread: 90, origin: { y: 0.5 } });
               this.isOpening = false;
               
@@ -712,14 +757,14 @@
         redeemIphone() {
           if (this.iphoneFragments < 50) return;
           
-          if (confirm(`当前拥有 ${this.iphoneFragments} 个碎片，确定消耗 50 个碎片兑换一台 iPhone 16 Pro 吗？`)) {
+          if (confirm(`当前拥有 ${this.iphoneFragments} 个碎片，确定消耗 50 个碎片兑换一台 iPhone 18 Pro 吗？`)) {
             this.playSound('win');
             confetti({ particleCount: 150, spread: 100, origin: { y: 0.4 } });
             this.iphoneFragments -= 50;
 
             const nowTime = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             this.historyList.unshift({
-              name: "iPhone 16 Pro 256G (实物兑换)",
+              name: "iPhone 18 Pro 256G (实物兑换)",
               value: 1,
               type: "device",
               icon: "📱",
@@ -727,7 +772,7 @@
             });
             this.saveHistory();
 
-            alert("🎉 恭喜！已成功兑换一台 iPhone 16 Pro 实物奖励，请联系客服登记地址发放！");
+            alert("🎉 恭喜！已成功兑换一台 iPhone 18 Pro 实物奖励，请联系客服登记地址发放！");
           }
         },
 
