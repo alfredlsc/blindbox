@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Touch 'n Go 风格 - 流水盲盒与积分兑换</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Three.js (3D 引擎) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- GSAP 动画库 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <!-- Canvas Confetti 烟花 -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    body {
+      background: #001e4d;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow-x: hidden;
+      user-select: none;
+    }
+    
+    .tng-bg {
+      background: radial-gradient(circle at 50% 0%, #005FB8 0%, #00173d 100%);
+    }
+
+    .tng-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .tng-btn-primary {
+      background: linear-gradient(135deg, #FFCC00 0%, #FFA800 100%);
+      color: #002B66;
+      font-weight: 900;
+      box-shadow: 0 4px 20px rgba(255, 204, 0, 0.4);
+    }
+
+    .tng-btn-primary:hover {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+
+    .tng-btn-blue {
+      background: #005FB8;
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+
+    .card-hover-3d {
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .card-hover-3d:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 204, 0, 0.5);
+      box-shadow: 0 12px 30px rgba(0, 95, 184, 0.3);
+    }
+
+    /* 呼吸灯发光效 */
+    @keyframes glow-pulse {
+      0%, 100% { filter: drop-shadow(0 0 10px rgba(255, 204, 0, 0.4)); }
+      50% { filter: drop-shadow(0 0 25px rgba(255, 204, 0, 0.8)); }
+    }
+    .animate-glow {
+      animation: glow-pulse 3s infinite ease-in-out;
+    }
+
+    /* 流光进度条头灯 */
+    .progress-head {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 10px;
+      background: #fff;
+      box-shadow: 0 0 10px #fff, 0 0 20px #FFCC00;
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body class="tng-bg min-h-screen pb-20" x-data="tngApp()" x-init="init3D()">
+
+  <!-- Header -->
+  <header class="border-b border-white/10 bg-[#00173d]/90 backdrop-blur-lg sticky top-0 z-50 px-4 py-3">
+    <div class="max-w-5xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="bg-[#FFCC00] text-[#002B66] text-xs font-black px-2.5 py-1 rounded-lg tracking-tighter uppercase shadow-md animate-pulse">
+          GO REWARDS
+        </div>
+        <span class="text-base font-extrabold tracking-wide text-white">Touch 'n Go 狂欢盛典</span>
+      </div>
+
+      <div class="flex items-center gap-2 text-xs">
+        <div class="bg-black/30 border border-white/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+          <span class="text-blue-200">流水:</span>
+          <span class="text-white font-mono font-bold" x-text="`RM ${animatedTurnover.toLocaleString()}`"></span>
+        </div>
+        <div class="bg-[#FFCC00] text-[#002B66] px-3.5 py-1.5 rounded-full flex items-center gap-1.5 font-bold shadow-md">
+          <span>GO积分:</span>
+          <span class="font-mono font-black text-sm" x-text="animatedPoints"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 mt-6 space-y-6">
+
+    <!-- 测试调试控制台 -->
+    <div class="tng-card rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <span class="text-blue-100 font-medium flex items-center gap-1">
+        <span>⚡</span> 模拟控制台（点击快速增加流水/积分测试大额兑换）：
+      </span>
+      <div class="space-x-1.5">
+        <button @click="addTurnover(10000)" class="bg-white/10 hover:bg-white/20 text-white px-2.5 py-1 rounded-full transition active:scale-95">+10k 流水</button>
+        <button @click="addTurnover(100000)" class="bg-amber-500/30 text-yellow-300 font-bold px-2.5 py-1 rounded-full transition active:scale-95">+100k 流水</button>
+        <button @click="addTurnover(1000000)" class="bg-[#FFCC00] text-[#002B66] font-bold px-2.5 py-1 rounded-full transition active:scale-95">+1M 流水</button>
+        <button @click="resetData()" class="text-red-300 hover:underline">重置</button>
+      </div>
+    </div>
+
+    <!-- 主展示区：3D 盲盒抽奖区 -->
+    <section class="tng-card rounded-3xl p-6 border border-white/20 relative overflow-hidden shadow-2xl animate-glow">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+        
+        <!-- 左侧：3D Canvas 舞台 -->
+        <div class="w-full md:w-1/2 relative flex flex-col items-center justify-center min-h-[260px] bg-black/30 rounded-2xl border border-white/10 overflow-hidden shadow-inner">
+          <div class="absolute top-3 left-3 bg-[#FFCC00] text-[#002B66] text-[10px] font-black px-2.5 py-0.5 rounded-full z-10 shadow">3D GO BOX</div>
+          
+          <div id="canvas-container" class="w-full h-[260px] cursor-grab active:cursor-grabbing"></div>
+
+          <p class="text-center text-[11px] text-blue-200/70 pb-2 flex items-center gap-1">
+            <span>👉</span> 拖拽可 360° 旋转观察 3D 悬浮宝箱
+          </p>
+        </div>
+
+        <!-- 右侧：开启与 iPhone 碎片进度 -->
+        <div class="w-full md:w-1/2 space-y-4">
+          <div>
+            <span class="text-xs font-bold text-[#FFCC00] uppercase tracking-wider">限时 Go Rewards 专场</span>
+            <h2 class="text-2xl font-black text-white mt-0.5">iPhone 16 Pro 幸运盲盒</h2>
+            <p class="text-blue-100/80 text-xs mt-1">每次开启消耗 10 GO积分，100% 获得现金红包或实物碎片</p>
+          </div>
+
+          <!-- iPhone 碎片进度条 -->
+          <div class="bg-[#00173d]/80 border border-white/10 rounded-2xl p-4 relative">
+            <div class="flex justify-between items-center text-xs mb-2">
+              <span class="text-white font-bold flex items-center gap-1">📱 iPhone 16 碎片收集</span>
+              <span class="text-[#FFCC00] font-mono font-bold" x-text="`${iphoneFragments} / 50`"></span>
+            </div>
+            <div class="w-full bg-black/40 h-3.5 rounded-full overflow-hidden p-0.5 border border-white/10 relative">
+              <div class="bg-gradient-to-r from-[#FFCC00] via-amber-400 to-amber-500 h-full rounded-full transition-all duration-500 relative" :style="`width: ${(iphoneFragments/50)*100}%`">
+                <div class="progress-head" x-show="iphoneFragments > 0"></div>
+              </div>
+            </div>
+            <div class="text-[10px] text-blue-200/60 mt-1.5">集齐 50 个碎片可直接兑换实物</div>
+          </div>
+
+          <!-- 抽奖按钮 -->
+          <button @click="open3DChest()" :disabled="points < 10 || isOpening" 
+                  :class="points < 10 || isOpening ? 'bg-white/10 text-white/40 cursor-not-allowed' : 'tng-btn-primary active:scale-95 shadow-lg shadow-yellow-500/20'"
+                  class="w-full py-4 rounded-2xl font-black text-base transition duration-200 uppercase tracking-wider flex items-center justify-center gap-2">
+            <span>🎁</span>
+            <span x-text="isOpening ? '宝箱剧烈震动开启中...' : '消耗 10 积分开启'"></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 直兑商城 (已扩充商品全梯度) -->
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <span>🛍️</span> GO Rewards 直兑专区 (保底兑换)
+        </h3>
+        <span class="text-blue-200 text-xs">积累足够 GO积分 100% 兑换</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <template x-for="(item, index) in storeItems" :key="index">
+          <div class="tng-card rounded-2xl p-4 card-hover-3d flex items-center justify-between relative overflow-hidden">
+            <div x-show="item.tag" class="absolute top-0 right-0 bg-[#FFCC00] text-[#002B66] text-[9px] font-black px-2 py-0.5 rounded-bl-lg uppercase" x-text="item.tag"></div>
+            <div class="flex items-center gap-3.5">
+              <div class="w-14 h-14 rounded-xl bg-[#00173d] border border-white/10 flex items-center justify-center text-2xl shadow-inner" x-text="item.icon"></div>
+              <div>
+                <div class="font-extrabold text-white text-sm" x-text="item.name"></div>
+                <div class="text-xs text-[#FFCC00] font-bold mt-0.5">
+                  <span x-text="`${item.cost} GO积分`"></span> 
+                  <span class="text-blue-200/60 font-normal" x-text="`(${item.turnoverReq})`"></span>
+                </div>
+              </div>
+            </div>
+            <button @click="redeem(item.name, item.cost)" :disabled="points < item.cost"
+                    :class="points < item.cost ? 'bg-white/10 text-white/30' : 'tng-btn-primary active:scale-95'"
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition flex-shrink-0">
+              直接兑换
+            </button>
+          </div>
+        </template>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 3D 翻牌中奖弹窗 Modal -->
+  <div x-show="rewardResult" x-transition.opacity 
+       class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    
+    <div class="tng-card border-2 border-[#FFCC00] rounded-3xl p-6 max-w-sm w-full text-center space-y-4 relative shadow-2xl transform transition-all">
+      <div class="text-xs font-extrabold text-[#FFCC00] uppercase tracking-widest animate-bounce">✨ 恭喜获得盲盒大奖 ✨</div>
+      
+      <div class="text-7xl my-3 animate-pulse" x-text="rewardResult?.icon"></div>
+      
+      <div>
+        <div class="text-2xl font-black text-white" x-text="rewardResult?.name"></div>
+        <div class="text-base font-bold text-[#FFCC00] mt-1" x-text="rewardResult?.type === 'cash' ? `RM ${rewardResult?.value}` : `+ ${rewardResult?.value} 碎片`"></div>
+      </div>
+
+      <div class="space-y-2 pt-2">
+        <button @click="claimReward()" class="w-full tng-btn-primary py-3 rounded-xl font-bold text-xs active:scale-95">
+          存入 Wallet / 确认领取
+        </button>
+        <button x-show="rewardResult?.type === 'cash'" @click="recycleReward()" class="w-full bg-white/10 hover:bg-white/20 text-white py-2.5 rounded-xl text-xs font-bold transition active:scale-95">
+          ♻️ 一键回收为 <span class="text-[#FFCC00] font-bold" x-text="`${rewardResult?.value} GO积分`"></span> (再抽一次)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function tngApp() {
+      return {
+        turnover: 50000,
+        points: 50,
+        animatedTurnover: 50000,
+        animatedPoints: 50,
+        iphoneFragments: 12,
+        isOpening: false,
+        rewardResult: null,
+
+        // Three.js 变量
+        scene: null, camera: null, renderer: null, chestGroup: null, lidGroup: null, light1: null,
+
+        // 扩充后的直兑商品清单
+        storeItems: [
+          { name: "Spritzer 天然矿泉水 (箱)", cost: 5, turnoverReq: "5k流水", icon: "💧", tag: "入门热销" },
+          { name: "RGB 机械键盘", cost: 50, turnoverReq: "50k流水", icon: "⌨️", tag: "电竞推荐" },
+          { name: "Panasonic 智能微波炉", cost: 150, turnoverReq: "150k流水", icon: "微", tag: "实用家电" },
+          { name: "Marshall Acton II 音箱", cost: 250, turnoverReq: "250k流水", icon: "📻", tag: "潮品发烧" },
+          { name: "Haier 13kg 变频滚筒洗衣机", cost: 350, turnoverReq: "350k流水", icon: "🧺", tag: "高端家电" },
+          { name: "iPhone 16 Pro 256G", cost: 500, turnoverReq: "500k流水", icon: "📱", tag: "旗舰数码" },
+          { name: "Proton Persona 轿车", cost: 5000, turnoverReq: "5M流水", icon: "🚗", tag: "终极豪华大奖" }
+        ],
+
+        prizePool: [
+          { name: "现金红包", value: 8, type: "cash", icon: "💵" },
+          { name: "现金红包", value: 18, type: "cash", icon: "💵" },
+          { name: "现金红包", value: 28, type: "cash", icon: "💵" },
+          { name: "iPhone 碎片", value: 1, type: "fragment", icon: "🧩" },
+          { name: "现金红包", value: 58, type: "cash", icon: "💰" },
+          { name: "iPhone 碎片", value: 3, type: "fragment", icon: "🧩" },
+          { name: "现金大奖", value: 888, type: "cash", icon: "🧧", isGrand: true },
+          { name: "iPhone 碎片", value: 5, type: "fragment", icon: "🧩", isGrand: true },
+        ],
+
+        // Web Audio 原生音效引擎
+        playSound(type) {
+          try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            if (type === 'click') {
+              osc.frequency.setValueAtTime(400, ctx.currentTime);
+              gain.gain.setValueAtTime(0.1, ctx.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+              osc.start(); osc.stop(ctx.currentTime + 0.05);
+            } else if (type === 'win') {
+              osc.type = 'triangle';
+              osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+              osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+              osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2);
+              gain.gain.setValueAtTime(0.2, ctx.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+              osc.start(); osc.stop(ctx.currentTime + 0.5);
+            }
+          } catch(e) {}
+        },
+
+        init3D() {
+          this.$nextTick(() => {
+            setTimeout(() => { this.buildThreeScene(); }, 100);
+          });
+        },
+
+        buildThreeScene() {
+          const container = document.getElementById('canvas-container');
+          if (!container) return;
+
+          const width = container.clientWidth || 320;
+          const height = container.clientHeight || 260;
+
+          this.scene = new THREE.Scene();
+          this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+          this.camera.position.set(0, 1.2, 6.5);
+
+          this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+          this.renderer.setSize(width, height);
+          this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+          
+          container.innerHTML = '';
+          container.appendChild(this.renderer.domElement);
+
+          // 环绕光与环境光
+          this.light1 = new THREE.DirectionalLight(0xFFCC00, 2.2);
+          this.light1.position.set(3, 5, 5);
+          this.scene.add(this.light1);
+
+          const light2 = new THREE.DirectionalLight(0x005FB8, 1.8);
+          light2.position.set(-3, -3, 3);
+          this.scene.add(light2);
+
+          const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+          this.scene.add(ambientLight);
+
+          // 构建 3D 礼盒
+          this.chestGroup = new THREE.Group();
+
+          const baseGeo = new THREE.BoxGeometry(2, 2, 2);
+          const blueMat = new THREE.MeshStandardMaterial({ color: 0x005FB8, roughness: 0.2, metalness: 0.5 });
+          const yellowMat = new THREE.MeshStandardMaterial({ color: 0xFFCC00, roughness: 0.1, metalness: 0.8 });
+          
+          const baseMesh = new THREE.Mesh(baseGeo, blueMat);
+          this.chestGroup.add(baseMesh);
+
+          // 十字金色礼带
+          const ribbonV = new THREE.Mesh(new THREE.BoxGeometry(2.05, 2.05, 0.3), yellowMat);
+          const ribbonH = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.05, 2.05), yellowMat);
+          this.chestGroup.add(ribbonV);
+          this.chestGroup.add(ribbonH);
+
+          // 礼盒盖子
+          this.lidGroup = new THREE.Group();
+          const lidMesh = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.4, 2.15), yellowMat);
+          this.lidGroup.add(lidMesh);
+          this.lidGroup.position.set(0, 1.1, 0);
+          this.chestGroup.add(this.lidGroup);
+
+          this.chestGroup.rotation.y = 0.5;
+          this.chestGroup.rotation.x = 0.2;
+          this.scene.add(this.chestGroup);
+
+          // 拖拽手势交互
+          let isDragging = false;
+          let prevMouse = { x: 0, y: 0 };
+          
+          container.addEventListener('mousedown', (e) => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; });
+          window.addEventListener('mouseup', () => isDragging = false);
+          container.addEventListener('mousemove', (e) => {
+            if (isDragging && !this.isOpening) {
+              this.chestGroup.rotation.y += (e.clientX - prevMouse.x) * 0.01;
+              this.chestGroup.rotation.x += (e.clientY - prevMouse.y) * 0.01;
+              prevMouse = { x: e.clientX, y: e.clientY };
+            }
+          });
+
+          // 触屏支持
+          container.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+              isDragging = true;
+              prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+          });
+          window.addEventListener('touchend', () => isDragging = false);
+          container.addEventListener('touchmove', (e) => {
+            if (isDragging && !this.isOpening && e.touches.length === 1) {
+              this.chestGroup.rotation.y += (e.touches[0].clientX - prevMouse.x) * 0.01;
+              this.chestGroup.rotation.x += (e.touches[0].clientY - prevMouse.y) * 0.01;
+              prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+          });
+
+          // 帧循环
+          let clock = new THREE.Clock();
+          const animate = () => {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+
+            if (!isDragging && !this.isOpening) {
+              this.chestGroup.rotation.y += 0.008;
+              this.chestGroup.position.y = Math.sin(elapsedTime * 2) * 0.1;
+            }
+
+            this.light1.position.x = Math.sin(elapsedTime * 1.5) * 4;
+            this.light1.position.z = Math.cos(elapsedTime * 1.5) * 4;
+
+            this.renderer.render(this.scene, this.camera);
+          };
+          animate();
+        },
+
+        // 3D 粒子喷发动画
+        createBurstParticles() {
+          const pCount = 60;
+          const pGeo = new THREE.BufferGeometry();
+          const positions = new Float32Array(pCount * 3);
+          const velocities = [];
+
+          for(let i=0; i<pCount; i++) {
+            positions[i*3] = 0;
+            positions[i*3+1] = 1;
+            positions[i*3+2] = 0;
+            velocities.push({
+              x: (Math.random() - 0.5) * 0.15,
+              y: Math.random() * 0.25 + 0.1,
+              z: (Math.random() - 0.5) * 0.15
+            });
+          }
+          pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+          const pMat = new THREE.PointsMaterial({ color: 0xFFCC00, size: 0.12, transparent: true, opacity: 1 });
+          const pMesh = new THREE.Points(pGeo, pMat);
+          this.scene.add(pMesh);
+
+          let pAnim = setInterval(() => {
+            const pos = pGeo.attributes.position.array;
+            for(let i=0; i<pCount; i++) {
+              pos[i*3] += velocities[i].x;
+              pos[i*3+1] += velocities[i].y;
+              pos[i*3+2] += velocities[i].z;
+            }
+            pGeo.attributes.position.needsUpdate = true;
+            pMat.opacity -= 0.04;
+            if(pMat.opacity <= 0) {
+              clearInterval(pAnim);
+              this.scene.remove(pMesh);
+            }
+          }, 16);
+        },
+
+        open3DChest() {
+          if (this.points < 10 || this.isOpening) return;
+          this.points -= 10;
+          this.animateValue('animatedPoints', this.points);
+          this.isOpening = true;
+
+          this.playSound('click');
+
+          if (navigator.vibrate) navigator.vibrate([30, 50, 30, 50, 100]);
+
+          gsap.timeline()
+            .to(this.chestGroup.scale, { x: 0.85, y: 0.85, z: 0.85, duration: 0.2 })
+            .to(this.chestGroup.position, { 
+              x: () => (Math.random() - 0.5) * 0.15, 
+              y: () => (Math.random() - 0.5) * 0.15, 
+              duration: 0.05, 
+              repeat: 6, 
+              yoyo: true 
+            })
+            .to(this.chestGroup.scale, { x: 1.15, y: 1.15, z: 1.15, duration: 0.15, ease: "back.out(2)" })
+            .to(this.lidGroup.position, { y: 2.8, duration: 0.3, ease: "power4.out" })
+            .call(() => {
+              this.createBurstParticles();
+              this.playSound('win');
+              const prize = this.prizePool[Math.floor(Math.random() * this.prizePool.length)];
+              this.rewardResult = prize;
+              confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
+              this.isOpening = false;
+              
+              gsap.to(this.chestGroup.scale, { x: 1, y: 1, z: 1, duration: 0.4 });
+              gsap.to(this.lidGroup.position, { y: 1.1, duration: 0.5, delay: 0.8 });
+            });
+        },
+
+        claimReward() {
+          this.playSound('click');
+          if (this.rewardResult.type === 'fragment') {
+            this.iphoneFragments += this.rewardResult.value;
+            if (this.iphoneFragments >= 50) {
+              alert("🎉 恭喜！已集齐 50 个碎片，成功兑换一台 iPhone 16！");
+              this.iphoneFragments -= 50;
+            }
+          }
+          this.rewardResult = null;
+        },
+
+        recycleReward() {
+          if (!this.rewardResult) return;
+          this.playSound('click');
+          const recycledPoints = this.rewardResult.value;
+          this.points += recycledPoints;
+          this.animateValue('animatedPoints', this.points);
+          alert(`♻️ 已成功回收！获得 ${recycledPoints} GO积分`);
+          this.rewardResult = null;
+        },
+
+        addTurnover(amount) {
+          this.playSound('click');
+          this.turnover += amount;
+          this.points += Math.floor(amount / 1000);
+          this.animateValue('animatedTurnover', this.turnover);
+          this.animateValue('animatedPoints', this.points);
+        },
+
+        animateValue(key, target) {
+          gsap.to(this, {
+            [key]: target,
+            duration: 0.8,
+            snap: { [key]: 1 },
+            ease: "power1.out"
+          });
+        },
+
+        redeem(name, cost) {
+          if (this.points < cost) return;
+          this.playSound('win');
+          this.points -= cost;
+          this.animateValue('animatedPoints', this.points);
+          confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+          alert(`兑换成功！已提交客服发放：${name}`);
+        },
+
+        resetData() {
+          this.turnover = 0;
+          this.points = 0;
+          this.animatedTurnover = 0;
+          this.animatedPoints = 0;
+          this.iphoneFragments = 0;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
