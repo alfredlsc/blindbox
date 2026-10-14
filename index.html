@@ -209,21 +209,32 @@
         <div class="w-full md:w-1/2 space-y-4">
           <div>
             <span class="text-xs font-bold text-[#FFCC00] uppercase tracking-wider">限时 Go Rewards 专场</span>
-            <h2 class="text-2xl font-black text-white mt-0.5">iPhone 18 Pro 幸运盲盒</h2>
+            <h2 class="text-2xl font-black text-white mt-0.5">iPhone 16 Pro 幸运盲盒</h2>
             <p class="text-blue-100/80 text-xs mt-1">每次开启消耗 10 GO积分，100% 获得现金红包或实物碎片</p>
           </div>
 
-          <div class="bg-[#00173d]/80 border border-white/10 rounded-2xl p-4 relative">
-            <div class="flex justify-between items-center text-xs mb-2">
-              <span class="text-white font-bold flex items-center gap-1">📱 iPhone 18 碎片收集</span>
+          <!-- iPhone 碎片收集与手动兑换区域 -->
+          <div class="bg-[#00173d]/80 border border-white/10 rounded-2xl p-4 relative space-y-2">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-white font-bold flex items-center gap-1">📱 iPhone 16 碎片收集</span>
               <span class="text-[#FFCC00] font-mono font-bold" x-text="`${iphoneFragments} / 50`"></span>
             </div>
+            
             <div class="w-full bg-black/40 h-3.5 rounded-full overflow-hidden p-0.5 border border-white/10 relative">
-              <div class="bg-gradient-to-r from-[#FFCC00] via-amber-400 to-amber-500 h-full rounded-full transition-all duration-500 relative" :style="`width: ${(iphoneFragments/50)*100}%`">
+              <div class="bg-gradient-to-r from-[#FFCC00] via-amber-400 to-amber-500 h-full rounded-full transition-all duration-500 relative" :style="`width: ${Math.min(100, (iphoneFragments/50)*100)}%`">
                 <div class="progress-head" x-show="iphoneFragments > 0"></div>
               </div>
             </div>
-            <div class="text-[10px] text-blue-200/60 mt-1.5">集齐 50 个碎片可直接兑换实物</div>
+
+            <div class="flex justify-between items-center pt-1">
+              <span class="text-[10px] text-blue-200/60">集齐 50 个碎片可直接兑换实物</span>
+              <button @click="redeemIphone()" 
+                      :disabled="iphoneFragments < 50"
+                      :class="iphoneFragments >= 50 ? 'bg-emerald-400 text-slate-950 font-black animate-bounce shadow-lg shadow-emerald-400/30' : 'bg-white/10 text-white/30 cursor-not-allowed'"
+                      class="px-3 py-1 rounded-lg text-xs font-bold transition">
+                <span x-text="iphoneFragments >= 50 ? '🎁 立即兑换实物' : '未集齐'"></span>
+              </button>
+            </div>
           </div>
 
           <button @click="open3DChest()" :disabled="points < 10 || isOpening" 
@@ -236,7 +247,7 @@
       </div>
     </section>
 
-    <!-- 🛍️ 前台直兑商城（增加独立进度条） -->
+    <!-- 🛍️ 前台直兑商城（带动态进度条） -->
     <section class="space-y-3">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-extrabold text-white flex items-center gap-2">
@@ -249,10 +260,8 @@
         <template x-for="(item, index) in storeItems" :key="index">
           <div class="tng-card rounded-2xl p-4 card-hover-3d flex flex-col justify-between relative overflow-hidden gap-3">
             
-            <!-- 角落角标 -->
             <div x-show="item.tag" class="absolute top-0 right-0 bg-[#FFCC00] text-[#002B66] text-[9px] font-black px-2 py-0.5 rounded-bl-lg uppercase" x-text="item.tag"></div>
 
-            <!-- 上半部分：图片、名称、积分与兑换按钮 -->
             <div class="flex items-center justify-between gap-3">
               <div class="flex items-center gap-3.5">
                 <div class="w-14 h-14 rounded-xl bg-[#00173d] border border-white/10 flex items-center justify-center overflow-hidden shadow-inner flex-shrink-0 relative">
@@ -275,7 +284,7 @@
               </button>
             </div>
 
-            <!-- 下半部分：单个商品的兑换进度条 -->
+            <!-- 商品独立兑换进度条 -->
             <div class="bg-black/30 border border-white/10 rounded-xl p-2.5 space-y-1.5">
               <div class="flex justify-between items-center text-[11px]">
                 <span class="text-blue-200/80">兑换进度:</span>
@@ -618,70 +627,4 @@
               const prize = this.prizePool[Math.floor(Math.random() * this.prizePool.length)];
               this.rewardResult = prize;
               confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
-              this.isOpening = false;
-              
-              gsap.to(this.chestGroup.scale, { x: 1, y: 1, z: 1, duration: 0.4 });
-              gsap.to(this.lidGroup.position, { y: 1.1, duration: 0.5, delay: 0.8 });
-            });
-        },
-
-        claimReward() {
-          this.playSound('click');
-          if (this.rewardResult.type === 'fragment') {
-            this.iphoneFragments += this.rewardResult.value;
-            if (this.iphoneFragments >= 50) {
-              alert("🎉 恭喜！已集齐 50 个碎片，成功兑换一台 iPhone 16！");
-              this.iphoneFragments -= 50;
-            }
-          }
-          this.rewardResult = null;
-        },
-
-        recycleReward() {
-          if (!this.rewardResult) return;
-          this.playSound('click');
-          const recycledPoints = this.rewardResult.value;
-          this.points += recycledPoints;
-          this.animateValue('animatedPoints', this.points);
-          alert(`♻️ 已成功回收！获得 ${recycledPoints} GO积分`);
-          this.rewardResult = null;
-        },
-
-        addTurnover(amount) {
-          this.playSound('click');
-          this.turnover += amount;
-          this.points += Math.floor(amount / 1000);
-          this.animateValue('animatedTurnover', this.turnover);
-          this.animateValue('animatedPoints', this.points);
-        },
-
-        animateValue(key, target) {
-          gsap.to(this, {
-            [key]: target,
-            duration: 0.8,
-            snap: { [key]: 1 },
-            ease: "power1.out"
-          });
-        },
-
-        redeem(name, cost) {
-          if (this.points < cost) return;
-          this.playSound('win');
-          this.points -= cost;
-          this.animateValue('animatedPoints', this.points);
-          confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
-          alert(`兑换成功！已提交客服发放：${name}`);
-        },
-
-        resetData() {
-          this.turnover = 0;
-          this.points = 0;
-          this.animatedTurnover = 0;
-          this.animatedPoints = 0;
-          this.iphoneFragments = 0;
-        }
-      }
-    }
-  </script>
-</body>
-</html>
+              this
